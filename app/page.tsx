@@ -43,7 +43,7 @@ export default async function Exams() {
 
         <div className="mx-auto w-full min-w-0 max-w-2xl space-y-4">
           <section className="space-y-2">
-            <div className="flex w-full max-w-md flex-col gap-6">
+            <div className="flex w-full max-w-md grid md:flex gap-6">
               <Item variant="outline" asChild>
                 <a href="#">
                   <ItemMedia variant="icon">
