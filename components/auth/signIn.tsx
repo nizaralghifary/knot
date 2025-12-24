@@ -60,7 +60,7 @@ export default function SignIn() {
   return (
     <Card className="p-5 md:p-8">
       <CardHeader>
-        <CardTitle className="text-xl">Sign in</CardTitle>
+        <CardTitle className="text-xl">Sign In</CardTitle>
         <CardDescription>Enter your username and password</CardDescription>
       </CardHeader>
       <CardContent>
@@ -102,7 +102,7 @@ export default function SignIn() {
         <p className="text-center text-muted-foreground text-sm mt-4">
           Don&apos;t have an account?{" "}
           <a href="/sign-up" className="text-black dark:text-white underline">
-            Sign up
+            Sign Up
           </a>
         </p>
       </CardContent>

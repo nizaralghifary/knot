@@ -1,73 +1,80 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-"use client";
 
-import { useTheme } from "next-themes";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { LogOut } from "lucide-react";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import { Atom, Sigma, ChevronRightIcon, Settings } from "lucide-react";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item";
+import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/spinner";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import packageJson from "@/package.json";
+export default async function Exams() {
+  const session = await auth();
 
-export default function SettingsPage() {
-  const router = useRouter();
-  const { theme, setTheme } = useTheme();
-  const { data: session, status } = useSession({
-     required: true,
-     onUnauthenticated() {
-       router.push("/sign-in");
-     }
-  });
-
-  const handleLogout = () => {
-    router.push("/sign-out");
-  };
-
-  if (status === "loading") {
-    return (
-      <div className="flex items-center justify-center min-h-screen font-semibold">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (!session) {
+    redirect("/sign-in");
   }
 
   return (
-    <main className="relative min-h-screen flex flex-col">
+    <main className="relative min-h-screen flex">
       <div className="flex-1 space-y-4 px-8 py-6 lg:gap-10 lg:px-0 lg:py-8 xl:grid xl:grid-cols-[1fr_300px]">
+        <div className="flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-x-2">
+            <h1 className="font-semibold text-2xl">Knot</h1>
+          </Link>
+
+          <div className="flex items-center">
+            <a href="/settings">
+              <Settings className="flex-auto" />
+            </a>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xl text-center">
+            Hi @{session?.user?.username || "Guest"} 👋🏻
+          </p>
+        </div>
+
         <div className="mx-auto w-full min-w-0 max-w-2xl space-y-4">
-          <header>
-            <p className="text-3xl font-semibold">Frontend Test</p>
-          </header>
           <section className="space-y-2">
-            <div>
-              <p className="text-lg font-medium">Theme</p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch 
-                checked={theme === "dark"} 
-                onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-              />
-              <Label>
-                Dark Mode
-              </Label>
+            <div className="flex w-full max-w-md flex-col gap-6">
+              <Item variant="outline" asChild>
+                <a href="#">
+                  <ItemMedia variant="icon">
+                    <Sigma className="size-5" />
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle>Math Test</ItemTitle>
+                    <ItemDescription>Do the Math Test</ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <ChevronRightIcon className="size-4" />
+                  </ItemActions>
+                </a>
+              </Item>
+
+              <Item variant="outline" asChild>
+                <a href="#">
+                  <ItemMedia variant="icon">
+                    <Atom className="size-5" />
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle>Physics Test</ItemTitle>
+                    <ItemDescription>Do the Physics Test</ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <ChevronRightIcon className="size-4" />
+                  </ItemActions>
+                </a>
+              </Item>
             </div>
           </section>
-          <div>
-            <p className="text-lg font-medium">Account</p>
-            <p className="pt-2 text-sm text-muted-foreground">Username: {session?.user?.username ?? "N/A"}</p>
-            <p className="pt-2 text-sm text-muted-foreground">Email: {session?.user?.email ?? "N/A"}</p>
-            <Button variant="destructive" onClick={handleLogout} className="mt-2">
-              <LogOut />
-              Logout
-            </Button>
-          </div>
-          <div>
-            <p className="text-lg font-medium">App Version</p>
-            <p className="pt-2 text-sm text-muted-foreground">Version: {packageJson.version}</p>
-          </div>
         </div>
       </div>
     </main>

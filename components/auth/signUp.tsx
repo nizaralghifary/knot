@@ -123,8 +123,8 @@ export default function SignUp() {
     <div className="flex justify-center items-center min-h-screen">
       <Card className="p-5 md:p-8 w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-xl text-center">Sign Up</CardTitle>
-          <CardDescription className="text-center">Create your account</CardDescription>
+          <CardTitle className="text-xl">Sign Up</CardTitle>
+          <CardDescription>Create your account</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignUp} className="flex flex-col gap-2">
@@ -171,7 +171,7 @@ export default function SignUp() {
                 className="underline"
                 onClick={() => router.push("/sign-in")}
               >
-                Sign in
+                Sign In
               </button>
             </p>
           </form>
