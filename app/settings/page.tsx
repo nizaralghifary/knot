@@ -45,64 +45,68 @@ export default function SettingsPage() {
     }
 
     return (
-        <main className="relative min-h-screen flex flex-col">
-            <div className="flex-1 space-y-4 px-8 py-6 lg:gap-10 lg:px-0 lg:py-8 xl:grid xl:grid-cols-[1fr_300px]">
-                <div className="mx-auto w-full min-w-0 max-w-2xl space-y-4">
-                    <header>
-                        <a href="/">
-                            <ArrowLeft className="mb-3" />
-                        </a>
-                        <p className="text-3xl font-semibold">Settings</p>
-                    </header>
-                    <section className="space-y-2">
+        <main className="min-h-screen p-4 md:p-6">
+            <div className="flex items-center justify-between mb-8">      
+                <a href="/">
+                    <ArrowLeft className="mb-3 h-6 w-6" />
+                </a>
+                <p className="text-2xl font-semibold">Settings</p>
+                <div className="w-20"></div>
+            </div>
+
+            <div className="max-w-2xl mx-auto space-y-6">
+                <section className="bg-card border rounded-lg p-6">
+                    <p className="text-lg font-semibold mb-4">Theme</p>                                                                                                            
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="theme-toggle" className="text-sm text-muted-foreground">
+                            Dark Mode
+                        </Label>
+                        <Switch 
+                            id="theme-toggle"
+                            checked={theme === "dark"} 
+                            onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                        /> 
+                    </div>
+                </section>
+                <section className="space-y-4 rounded-lg border p-6">
+                    <p className="text-lg font-medium">Account</p>
+                    <div className="space-y-2">
                         <div>
-                            <p className="text-lg font-medium">Theme</p>
-                        </div>                                                                                                             
-                        <div className="flex items-center space-x-2">
-                            <Switch 
-                                checked={theme === "dark"} 
-                                onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-                            />                                                                                                                                                                       
-                            <Label>
-                                Dark Mode
-                            </Label>
+                            <p className="text-sm text-muted-foreground">Username</p>
+                            <p>{session?.user?.username ?? "N/A"}</p>
                         </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground">Email</p>
+                            <p>{session?.user?.email ?? "N/A"}</p>
+                        </div>
+                    </div>
+                    <Button variant="destructive" onClick={handleLogout} className="w-full mt-4">
+                        <LogOut className="mr-2"/>
+                        Logout
+                    </Button>
+                </section>
+                {isAdmin && (
+                    <section className="space-y-2">
+                        <Item variant="outline" size="sm" asChild>
+                            <a href="/admin" className="block">
+                                <ItemMedia>
+                                    <Shield className="size-5" />
+                                </ItemMedia>
+                                <ItemContent>
+                                    <ItemTitle>Admin Dashboard</ItemTitle>
+                                    <ItemDescription>Access admin dashboard and tools</ItemDescription>
+                                </ItemContent>
+                                <ItemActions>
+                                    <ChevronRightIcon className="size-4" />
+                                </ItemActions>
+                            </a>
+                        </Item>
                     </section>
-                    <div>
-                        <p className="text-lg font-medium">Account</p>
-                        <p className="pt-2 text-sm text-muted-foreground">Username: {session?.user?.username ?? "N/A"}</p>
-                        <p className="pt-2 text-sm text-muted-foreground">Email: {session?.user?.email ?? "N/A"}</p>
-                        <Button variant="destructive" onClick={handleLogout} className="mt-2">
-                            <LogOut />
-                            Logout
-                        </Button>
-                    </div>
-                    {isAdmin && (
-                        <section className="space-y-2">
-                            <div>
-                                <p className="text-lg font-medium">Administration</p>
-                                <p className="text-sm text-muted-foreground pt-1">Access admin dashboard and tools</p>
-                            </div>
-                            <Item variant="outline" size="sm" asChild>
-                                <a href="/admin">
-                                    <ItemMedia>
-                                        <Shield className="size-5" />
-                                    </ItemMedia>
-                                    <ItemContent>
-                                        <ItemTitle>Admin Dashboard</ItemTitle>
-                                    </ItemContent>
-                                    <ItemActions>
-                                        <ChevronRightIcon className="size-4" />
-                                    </ItemActions>
-                                </a>
-                            </Item>
-                        </section>
-                    )}
-                    <div>
-                        <p className="text-lg font-medium">App Version</p>
-                        <p className="pt-2 text-sm text-muted-foreground">Version: {packageJson.version}</p>
-                    </div>
-                </div>
+                )}
+                <section className="space-y-2 rounded-lg border p-6">
+                    <p className="text-lg font-medium">App Version</p>
+                    <p className="pt-2 text-sm text-muted-foreground">Version: {packageJson.version}</p>
+                </section>
             </div>
         </main>
     );
