@@ -13,9 +13,10 @@ type DatabaseUser = {
   email: string;
   password: string;
   is_verified: boolean;
+  role: "admin"|"user";
 };
 
-const SESSION_MAX_AGE = 5 * 24 * 60 * 60;
+const SESSION_MAX_AGE = 1*24*60*60;
 
 const getUserByUsername = async (username: string): Promise<DatabaseUser | null> => {
   try {
@@ -71,6 +72,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           username: user.username,
           email: user.email,
           is_verified: user.is_verified,
+          role: user.role,
         };
       },
     }),
@@ -88,6 +90,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.username = token.username;
         session.user.email = token.email;
         session.user.is_verified = token.is_verified;
+        session.user.role = token.role;
       }
     return session;
     },
@@ -95,8 +98,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.sub = user.id;
         token.username = user.username;
-        token.email = user.email;
+        token.email = user.email as string;
         token.is_verified = user.is_verified;
+        token.role = user.role;
       }
     return token;
     },

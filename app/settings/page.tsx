@@ -3,12 +3,21 @@
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { LogOut, ArrowLeft } from "lucide-react";
+import { LogOut, ArrowLeft, Shield, ChevronRightIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/spinner";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+    Item,
+    ItemActions,
+    ItemContent,
+    ItemDescription,
+    ItemMedia,
+    ItemTitle,
+} from "@/components/ui/item";
+
 import packageJson from "@/package.json";
 
 export default function SettingsPage() {
@@ -24,6 +33,8 @@ export default function SettingsPage() {
     const handleLogout = () => {
         router.push("/sign-out");
     }
+
+    const isAdmin = session?.user?.role === "admin";
 
     if (status === "loading") {
         return (
@@ -66,6 +77,27 @@ export default function SettingsPage() {
                             Logout
                         </Button>
                     </div>
+                    {isAdmin && (
+                        <section className="space-y-2">
+                            <div>
+                                <p className="text-lg font-medium">Administration</p>
+                                <p className="text-sm text-muted-foreground pt-1">Access admin dashboard and tools</p>
+                            </div>
+                            <Item variant="outline" size="sm" asChild>
+                                <a href="/admin">
+                                    <ItemMedia>
+                                        <Shield className="size-5" />
+                                    </ItemMedia>
+                                    <ItemContent>
+                                        <ItemTitle>Admin Dashboard</ItemTitle>
+                                    </ItemContent>
+                                    <ItemActions>
+                                        <ChevronRightIcon className="size-4" />
+                                    </ItemActions>
+                                </a>
+                            </Item>
+                        </section>
+                    )}
                     <div>
                         <p className="text-lg font-medium">App Version</p>
                         <p className="pt-2 text-sm text-muted-foreground">Version: {packageJson.version}</p>
