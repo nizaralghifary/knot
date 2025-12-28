@@ -20,7 +20,7 @@ const questionSchema = z.object({
     order: z.number().min(1),
 })
 
-export async function POST(request: NextRequest) {
+/*export async function POST(request: NextRequest) {
     try {
         const session = await auth();
         if (!session || session.user.role !== "admin") {
@@ -30,4 +30,4 @@ export async function POST(request: NextRequest) {
             )
         }
     }
-}
+}*/
