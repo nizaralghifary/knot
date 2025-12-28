@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Spinner } from "@/components/spinner";
 
 type Question = {
     id: string;
@@ -25,9 +26,28 @@ type Question = {
 }
 
 export default function NewExamPage() {
-    const router = useRouter();
-    const { data: session } = useSession();
     const [loading, setLoading] = useState(false);
+    const router = useRouter();
+    const { data: session, status } = useSession({
+        required: true,
+        onUnauthenticated() {
+            router.push("/");
+        }
+    });
+
+    useEffect(() => {
+        if (status === "loading") return;
+
+        if (!session) {
+            router.push("/sign-in");
+            return;                       
+        }
+
+        if (session?.user.role !== "admin") {
+            router.push("/");
+            return;                                  
+        }
+    }, [session, status, router])
 
     const [examData, setExamData] = useState({
         title: "",
@@ -47,6 +67,14 @@ export default function NewExamPage() {
             order: 1,
         }
     ])
+
+    if (status === "loading") {
+        return (
+            <div className="flex items-center justify-center min-h-screen font-semibold">
+                <Spinner size="lg" />
+            </div>
+        )
+    }
 
     const handleAddQuestion = () => {
         const newQuestion: Question = {

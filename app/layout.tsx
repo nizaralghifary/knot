@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Knot",
-  description: "idk",
+  description: "An Exam Platform",
 };
 
 export default async function RootLayout({
