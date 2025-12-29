@@ -21,8 +21,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { format } from "date-fns";
+import { Separator } from "@/components/ui/separator"
+import { format } from "date-fns"
 
 interface PageProps {
   params: {
