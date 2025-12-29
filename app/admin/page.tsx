@@ -106,7 +106,6 @@ export default async function AdminPanel() {
                 </Card>
             </div>
 
-            {/* recent exams table */}
             <Card className="mb-8">
                 <CardHeader>
                     <CardTitle>Recent Exams</CardTitle>
