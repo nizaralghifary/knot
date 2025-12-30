@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, PlusCircle, MinusCircle } from "lucide-react";
@@ -57,14 +57,15 @@ export default function EditExamPage({ params }: PageProps) {
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [examId, setExamId] = useState<string>("");
-
+  
   useEffect(() => {
     const unwrapParams = async () => {
       const resolvedParams = await params;
       setExamId(resolvedParams.id);
     };
     unwrapParams();
-  }, [params]);
+  }, [params])
+
 
   useEffect(() => {
     if (status === "loading") return;
