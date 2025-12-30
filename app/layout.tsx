@@ -4,7 +4,7 @@ import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-
+import { Analytics } from "@vercel/analytics/next";
 import { SessionProvider } from "next-auth/react";
 
 const geistSans = Geist({
@@ -36,12 +36,13 @@ export default async function RootLayout({
       <SessionProvider>
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
           storageKey="knot-theme"
         >
           {children}
+          <Analytics/>
           <Toaster />
         </ThemeProvider>
        </SessionProvider>
