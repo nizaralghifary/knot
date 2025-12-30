@@ -31,7 +31,7 @@ interface PageProps {
 }
 
 export default async function ExamDetailPage({ params }: PageProps) {
-  const { id } = await params;
+  const { id } = params;
   const session = await auth();
   if (!session || session.user.role !== "admin") {
     redirect("/");
