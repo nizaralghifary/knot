@@ -133,16 +133,16 @@ export default async function AdminPanel() {
                                     <span>{exam.duration} min</span>
                                 </div>
                                 <div className="col-span-3 flex items-center gap-2">
-                                    <Button variant="ghost" size="sm" asChild>
+                                    {/*<Button variant="ghost" size="sm" asChild>
                                         <Link href={`/admin/exams/${exam.id}/edit`}>
                                             <Edit className="h-4 w-4 mr-1" />
                                             Edit
                                         </Link>
-                                    </Button>
+                                    </Button>*/}
                                     <Button variant="ghost" size="sm" asChild>
                                         <Link href={`/admin/exams/${exam.id}`}>
                                             <Eye className="h-4 w-4 mr-1" />
-                                            View
+                                            <p className="hidden md:block">View</p>
                                         </Link>
                                     </Button>
                                     <Button variant="ghost" size="sm" className="text-destructive">

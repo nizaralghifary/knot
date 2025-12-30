@@ -11,15 +11,16 @@ export const users = pgTable("users", {
     password: text("password").notNull(),
     role: userRoleEnum("role").default("user").notNull(),
     is_verified: boolean("is_verified").default(false).notNull(),
-    created_at: timestamp("created_at").defaultNow().notNull(), 
+    created_at: timestamp("created_at").defaultNow().notNull()
 });
 
 export const otpCodes = pgTable("otp_codes", {
     id: uuid("id").defaultRandom().primaryKey(),
 	email: varchar({ length: 255 }).notNull(),
-	code: varchar({ length: 6 }).notNull(),
-	created_at: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
-	expires_at: timestamp("expires_at", { mode: 'string'}).notNull(),
+	code: varchar({ length: 64 }).notNull(),
+    attempts: integer("attempts").default(0).notNull(),
+	created_at: timestamp("created_at").defaultNow().notNull(),
+	expires_at: timestamp("expires_at").notNull()
 });
 
 export const exams = pgTable("exams", {
@@ -29,7 +30,7 @@ export const exams = pgTable("exams", {
     is_published: boolean("is_published").default(false),
     duration: integer("duration").notNull(),
     created_by: uuid("created_by").notNull().references(() => users.id),
-    created_at: timestamp("created_at").defaultNow().notNull(),
+    created_at: timestamp("created_at").defaultNow().notNull()
 });
 
 export const questions = pgTable("questions", {
@@ -41,7 +42,7 @@ export const questions = pgTable("questions", {
     correct_answer: jsonb("correct_answer").notNull(),
     points: integer("points").notNull().default(1),
     order: integer("order").notNull(), // urutan soal
-    created_at: timestamp("created_at").defaultNow().notNull(),
+    created_at: timestamp("created_at").defaultNow().notNull()
 });
 
 export const answers = pgTable("answers", {
@@ -51,7 +52,7 @@ export const answers = pgTable("answers", {
     user_answer: jsonb("user_answer").notNull(),
     is_correct: boolean("is_correct").notNull(),
     points_earned: integer("points_earned").notNull().default(0),
-    answered_at: timestamp("answered_at").defaultNow().notNull(),
+    answered_at: timestamp("answered_at").defaultNow().notNull()
 });
 
 export const examAttempts = pgTable("exam_attempts", {
@@ -61,7 +62,7 @@ export const examAttempts = pgTable("exam_attempts", {
     started_at: timestamp("started_at").defaultNow().notNull(),
     completed_at: timestamp("completed_at"),
     total_score: integer("total_score").default(0),
-    is_completed: boolean("is_completed").default(false).notNull(),
+    is_completed: boolean("is_completed").default(false).notNull()
 });
 
 export type Users = InferSelectModel<typeof users>;

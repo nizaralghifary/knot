@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, PlusCircle, MinusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Spinner } from "@/components/spinner";
 
 type MatchingPair = {
   left: string;
@@ -29,41 +31,151 @@ type Question = {
   order: number;
 }
 
-export default function NewExamPage() {
-  const [loading, setLoading] = useState(false);
+interface PageProps {
+  params: {
+    id: string;
+  };
+}
+
+export default function EditExamPage({ params }: PageProps) {
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
+  const { data: session, status } = useSession({
+    required: true,
+    onUnauthenticated() {
+      router.push("/");
+    }
+  });
 
   const [examData, setExamData] = useState({
     title: "",
     description: "",
     duration: 60,
     is_published: false,
-  })
+  });
 
-  const [questions, setQuestions] = useState<Question[]>([
-    {
-      id: "1",
-      question_text: "",
-      question_type: "multiple_choice",
-      options: ["", "", "", ""],
-      correct_answer: "",
-      points: 1,
-      order: 1,
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [examId, setExamId] = useState<string>("");
+
+  useEffect(() => {
+    const unwrapParams = async () => {
+      const resolvedParams = await params;
+      setExamId(resolvedParams.id);
+    };
+    unwrapParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (status === "loading") return;
+
+    if (!session) {
+      router.push("/sign-in");
+      return;
     }
-  ])
+
+    if (session?.user.role !== "admin") {
+      router.push("/");
+      return;
+    }
+  }, [session, status, router]);
+
+  useEffect(() => {
+    if (!examId) return;
+
+    const fetchExamData = async () => {
+      try {
+        const response = await fetch(`/api/admin/exams/${examId}`);
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch exam data");
+        }
+
+        const data = await response.json();
+
+        setExamData({
+          title: data.title,
+          description: data.description || "",
+          duration: data.duration,
+          is_published: data.is_published,
+        });
+
+        const safeParse = (str: string) => {
+          try {
+            return JSON.parse(str);
+          } catch {
+            return str;
+          }
+        };
+
+        const parsedQuestions = data.questions.map((q: any) => {
+          let options: string[] | undefined;
+          let matching_pairs: MatchingPair[] | undefined;
+          let correct_answer: string | string[] | MatchingPair[];
+
+          try {
+            if (q.question_type === "multiple_choice") {
+              options = safeParse(q.options);
+              correct_answer = safeParse(q.correct_answer);
+            } else if (q.question_type === "short_answer") {
+              correct_answer = safeParse(q.correct_answer);
+            } else if (q.question_type === "matching") {
+              matching_pairs = safeParse(q.options);
+              correct_answer = safeParse(q.correct_answer);
+            } else {
+              correct_answer = "";
+            }
+          } catch (err) {
+            console.error("Parse error:", err);
+            correct_answer = "";
+          }
+
+          return {
+            id: q.id,
+            question_text: q.question_text,
+            question_type: q.question_type,
+            options,
+            matching_pairs,
+            correct_answer,
+            points: q.points,
+            order: q.order,
+          };
+        });
+
+        setQuestions(parsedQuestions);
+      } catch (error: any) {
+        toast.error("Error loading exam", {
+          description: error.message,
+        });
+        router.push("/admin");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchExamData();
+  }, [examId, router]);
+
+  if (status === "loading" || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen font-semibold">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   const handleAddQuestion = () => {
     const newQuestion: Question = {
-      id: (questions.length + 1).toString(),
+      id: `new-${Date.now()}`,
       question_text: "",
       question_type: "multiple_choice",
       options: ["", "", "", ""],
       correct_answer: "",
       points: 1,
       order: questions.length + 1,
-    }
+    };
     setQuestions([...questions, newQuestion]);
-  }
+  };
 
   const handleRemoveQuestion = (id: string) => {
     if (questions.length > 1) {
@@ -72,13 +184,13 @@ export default function NewExamPage() {
         order: idx + 1,
       })));
     }
-  }
+  };
 
   const handleQuestionChange = (id: string, field: keyof Question, value: any) => {
     setQuestions(questions.map(q => 
       q.id === id ? { ...q, [field]: value } : q
     ));
-  }
+  };
 
   const handleOptionChange = (questionId: string, optionIndex: number, value: string) => {
     setQuestions(questions.map(q => {
@@ -89,9 +201,8 @@ export default function NewExamPage() {
       }
       return q;
     }));
-  }
+  };
 
-  // handle matching pairs
   const handleAddMatchingPair = (questionId: string) => {
     setQuestions(questions.map(q => {
       if (q.id === questionId) {
@@ -112,7 +223,7 @@ export default function NewExamPage() {
         return {
           ...q,
           matching_pairs: newPairs,
-          correct_answer: newPairs // Update correct answer as well
+          correct_answer: newPairs
         };
       }
       return q;
@@ -133,26 +244,24 @@ export default function NewExamPage() {
         return {
           ...q,
           matching_pairs: newPairs,
-          correct_answer: newPairs // Update correct answer
+          correct_answer: newPairs
         };
       }
       return q;
     }));
   };
 
-  // handle short answer
   const handleShortAnswerChange = (questionId: string, value: string) => {
     setQuestions(questions.map(q => 
       q.id === questionId ? { 
         ...q, 
         correct_answer: value,
-        options: undefined, // clear options for short answer
-        matching_pairs: undefined // clear matching pairs
+        options: undefined,
+        matching_pairs: undefined
       } : q
     ));
   };
 
-  // when question type changes, reset the relevant fields
   const handleQuestionTypeChange = (questionId: string, type: "multiple_choice" | "short_answer" | "matching") => {
     setQuestions(questions.map(q => {
       if (q.id === questionId) {
@@ -198,21 +307,19 @@ export default function NewExamPage() {
     const newQuestions = [...questions];
     const newIndex = direction === "up" ? index - 1 : index + 1;
                 
-    // swap questions
     [newQuestions[index], newQuestions[newIndex]] = [newQuestions[newIndex], newQuestions[index]];
 
-    // update order
     const updatedQuestions = newQuestions.map((q, idx) => ({
       ...q,
       order: idx + 1,
     }));
 
     setQuestions(updatedQuestions);
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
 
     try {
       if (!examData.title.trim()) {
@@ -255,6 +362,7 @@ export default function NewExamPage() {
 
       const formattedQuestions = questions.map(q => {
         const baseQuestion = {
+          id: q.id.startsWith('new-') ? undefined : q.id,
           question_text: q.question_text,
           question_type: q.question_type,
           points: q.points,
@@ -282,8 +390,8 @@ export default function NewExamPage() {
         return baseQuestion;
       });
 
-      const response = await fetch("/api/admin/exams", {
-        method: "POST",
+      const response = await fetch(`/api/admin/exams/${examId}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
@@ -291,25 +399,25 @@ export default function NewExamPage() {
           exam: examData,
           questions: formattedQuestions
         })
-      })
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create exam");
+        throw new Error(data.error || "Failed to update exam");
       }
 
-      toast.success("Exam created successfully!");
-      router.push("/admin");
+      toast.success("Exam updated successfully!");
+      router.push(`/admin/exams/${examId}`);
       router.refresh();
     } catch (error: any) {
-      toast.error("Error creating exam", {
+      toast.error("Error updating exam", {
         description: error.message,
-      })
+      });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
-  }
+  };
 
   return (
     <main className="min-h-screen p-4 md:p-6">
@@ -318,7 +426,7 @@ export default function NewExamPage() {
           <Button variant="ghost" onClick={() => router.back()} className="gap-2">
             <ArrowLeft className="h-6 w-6" />
           </Button>
-          <h1 className="text-xl text-center font-semibold">Create New Exam</h1>
+          <h1 className="text-xl text-center font-semibold">Edit Exam</h1>
           <div className="w-20"></div>
         </div>
 
@@ -326,7 +434,7 @@ export default function NewExamPage() {
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>Exam Details</CardTitle>
-              <CardDescription>Enter basic information about the exam</CardDescription>
+              <CardDescription>Update basic information about the exam</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -365,7 +473,6 @@ export default function NewExamPage() {
                         setExamData({...examData, duration: 0});
                       } else {
                         const numValue = parseInt(value);
-            
                         if (!isNaN(numValue)) {
                           setExamData({...examData, duration: numValue});
                         }
@@ -397,7 +504,7 @@ export default function NewExamPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Questions</CardTitle>
-                  <CardDescription>Add and configure exam questions</CardDescription>
+                  <CardDescription>Update exam questions</CardDescription>
                 </div>
                 <Button type="button" onClick={handleAddQuestion} className="gap-2">
                   <Plus className="h-4 w-4" />
@@ -477,7 +584,6 @@ export default function NewExamPage() {
                       />
                     </div>
 
-                    {/* multiple choice */}
                     {question.question_type === "multiple_choice" && (
                       <div className="space-y-3">
                         <Label className="mb-2">Options *</Label>
@@ -501,7 +607,6 @@ export default function NewExamPage() {
                       </div>
                     )}
 
-                    {/* short answer */}
                     {question.question_type === "short_answer" && (
                       <div className="space-y-3">
                         <Label className="mb-2">Correct Answer *</Label>
@@ -518,7 +623,6 @@ export default function NewExamPage() {
                       </div>
                     )}
 
-                    {/* matching pairs */}
                     {question.question_type === "matching" && (
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
@@ -530,80 +634,59 @@ export default function NewExamPage() {
                             onClick={() => handleAddMatchingPair(question.id)}
                             className="gap-1"
                           >
-                            <PlusCircle className="h-3 w-3" />
+                            <PlusCircle className="h-4 w-4" />
                             Add Pair
                           </Button>
                         </div>
-                        
-                        {question.matching_pairs && question.matching_pairs.length > 0 ? (
-                          <div className="space-y-3">
-                            {question.matching_pairs.map((pair, pairIndex) => (
-                              <div key={pairIndex} className="flex items-center gap-3">
-                                <div className="flex-1 space-y-1">
-                                  <Label className="text-xs">Left Item</Label>
-                                  <Input
-                                    value={pair.left}
-                                    onChange={(e) => handleMatchingPairChange(question.id, pairIndex, "left", e.target.value)}
-                                    placeholder="e.g., Capital of France"
-                                    required
-                                  />
-                                </div>
-                                
-                                <div className="flex-1 space-y-1">
-                                  <Label className="text-xs">Right Item</Label>
-                                  <Input
-                                    value={pair.right}
-                                    onChange={(e) => handleMatchingPairChange(question.id, pairIndex, "right", e.target.value)}
-                                    placeholder="e.g., Paris"
-                                    required
-                                  />
-                                </div>
-                                
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemoveMatchingPair(question.id, pairIndex)}
-                                  disabled={question.matching_pairs!.length <= 1}
-                                  className="mt-5"
-                                >
-                                  <MinusCircle className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </div>
-                            ))}
+                        {question.matching_pairs && question.matching_pairs.map((pair, pairIndex) => (
+                          <div key={pairIndex} className="flex items-center gap-2">
+                            <Input
+                              value={pair.left}
+                              onChange={(e) => handleMatchingPairChange(question.id, pairIndex, "left", e.target.value)}
+                              placeholder="Left side"
+                              className="flex-1"
+                              required
+                            />
+                            <span>→</span>
+                            <Input
+                              value={pair.right}
+                              onChange={(e) => handleMatchingPairChange(question.id, pairIndex, "right", e.target.value)}
+                              placeholder="Right side"
+                              className="flex-1"
+                              required
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveMatchingPair(question.id, pairIndex)}
+                              disabled={(question.matching_pairs?.length || 0) <= 1}
+                            >
+                              <MinusCircle className="h-4 w-4 text-destructive" />
+                            </Button>
                           </div>
-                        ) : (
-                          <div className="text-center py-4 text-muted-foreground border rounded-lg">
-                            No matching pairs added yet. Click "Add Pair" to add.
-                          </div>
-                        )}
-                        
-                        <p className="text-sm text-muted-foreground">
-                          Students will need to match left items with right items
-                        </p>
+                        ))}
                       </div>
                     )}
 
-                    {/* points for all question types */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="mb-2">Points *</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={question.points || ''}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            const numValue = Number(value);
-                            if (value === '') {
-                              handleQuestionChange(question.id, "points", 0);
-                            } else if (!isNaN(numValue)) {
-                              handleQuestionChange(question.id, "points", numValue);
-                            }
-                          }}
-                          required
-                        />
-                      </div>
+                    <div>
+                      <Label htmlFor={`points-${question.id}`} className="mb-2">Points *</Label>
+                      <Input
+                        id={`points-${question.id}`}
+                        type="number"
+                        min="1"
+                        value={question.points || ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const numValue = Number(value);
+                          if (value === '') {
+                            handleQuestionChange(question.id, "points", 0);
+                          } else if (!isNaN(numValue)) {
+                            handleQuestionChange(question.id, "points", numValue);
+                          }
+                        }}
+                        required
+                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -611,17 +694,19 @@ export default function NewExamPage() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
-              disabled={loading}
-            >
+          <div className="flex gap-4 justify-end">
+            <Button type="button" variant="outline" onClick={() => router.back()}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Creating..." : "Create Exam"}
+            <Button type="submit" disabled={submitting}>
+              {submitting ? (
+                <>
+                  <Spinner size="sm" className="mr-2" />
+                  Updating...
+                </>
+              ) : (
+                "Update Exam"
+              )}
             </Button>
           </div>
         </form>
