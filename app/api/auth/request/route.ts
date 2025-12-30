@@ -7,12 +7,15 @@ import { eq } from "drizzle-orm";
 const generateOTP = () => crypto.randomInt(100000, 999999).toString();
 const resend = new Resend(process.env.AUTH_RESEND_KEY);
 
+const hashOtp = (otp: string) =>
+crypto.createHash("sha256").update(otp).digest("hex");
+
 const sendOTPEmail = async (email: string, otp: string) => {
-  const subject = "Your Mathrix OTP Code";
-  const message = `Your Mathrix OTP code is: ${otp}. It will expire in 5 minutes.`;
+  const subject = "Your Knot OTP Code";
+  const message = `Your Knot OTP code is: ${otp}. It will expire in 5 minutes`;
 
   await resend.emails.send({
-    from: "noreply@nizaralghifary.my.id",
+    from: "Knot <auth@nizaralghifary.my.id>",
     to: email,
     subject,
     text: message,
@@ -28,25 +31,30 @@ export async function POST(req: Request) {
 
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-  const existingOtp = await db
+  const [existingOtp] = await db
     .select()
     .from(otpCodes)
     .where(eq(otpCodes.email, email))
     .limit(1);
 
-  if (existingOtp.length && new Date(existingOtp[0].expires_at) > new Date()) {
-    return new Response(JSON.stringify({ error: "OTP already sent, please wait." }), {
+  if (existingOtp && new Date(existingOtp.expires_at) > new Date()) {
+    return new Response(JSON.stringify({ error: "OTP already sent, please wait..." }), {
       status: 429,
     });
   }
 
   const otp = generateOTP();
+  const hashedOtp = hashOtp(otp);
 
   try {
     await db.delete(otpCodes).where(eq(otpCodes.email, email));
 
     await Promise.all([
-      db.insert(otpCodes).values({ email, code: otp, expires_at: expiresAt.toISOString() }),
+      db.insert(otpCodes).values({ 
+        email, 
+        code: hashedOtp, 
+        expires_at: expiresAt
+      }),
       sendOTPEmail(email, otp),
     ]);
 
