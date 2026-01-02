@@ -87,21 +87,36 @@ export async function POST(request: NextRequest) {
         ...validatedExam,
         created_by: session.user.id,
       }).returning();
+
       const examQuestions = validatedQuestions.map(q => {
         let optionsValue = null;
         let correctAnswerValue = null;
 
         if (q.question_type === "multiple_choice") {
-          optionsValue = q.options ? JSON.stringify(q.options) : null;
-          correctAnswerValue = JSON.stringify(q.correct_answer);
+          optionsValue = q.options || [];
+          correctAnswerValue = q.correct_answer;
         } 
         else if (q.question_type === "short_answer") {
           optionsValue = null;
-          correctAnswerValue = JSON.stringify(q.correct_answer);
+          correctAnswerValue = q.correct_answer;
         }
         else if (q.question_type === "matching") {
-          optionsValue = null;
-          correctAnswerValue = JSON.stringify(q.correct_answer);
+          const matchingPairs = q.correct_answer as Array<{left: string, right: string}>;
+          
+          const matching_pairs = matchingPairs.map(pair => ({ left: pair.left }));
+          
+          const right_options = matchingPairs.map(pair => pair.right);
+          const shuffled_right_options = right_options.sort(() => Math.random() - 0.5);
+          
+          optionsValue = {
+            matching_pairs,
+            right_options: shuffled_right_options
+          };
+          
+          correctAnswerValue = matchingPairs.reduce((acc, pair) => {
+            acc[pair.left] = pair.right;
+            return acc;
+          }, {} as Record<string, string>);
         }
 
         return {

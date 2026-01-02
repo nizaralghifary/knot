@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Knot",
+  title: "KnotExam",
   description: "An Exam Platform",
 };
 
@@ -36,8 +36,7 @@ export default async function RootLayout({
       <SessionProvider>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="light"
           disableTransitionOnChange
           storageKey="knot-theme"
         >

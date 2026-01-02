@@ -4,7 +4,7 @@ import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { LogOut, ArrowLeft, Shield, ChevronRightIcon } from "lucide-react";
-
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/spinner";
 import { Switch } from "@/components/ui/switch";
@@ -47,9 +47,9 @@ export default function SettingsPage() {
     return (
         <main className="min-h-screen p-4 md:p-6">
             <div className="flex items-center justify-between mb-8">      
-                <a href="/">
+                <Link href="/">
                     <ArrowLeft className="mb-3 h-6 w-6" />
-                </a>
+                </Link>
                 <p className="text-2xl font-semibold">Settings</p>
                 <div className="w-20"></div>
             </div>
@@ -88,7 +88,7 @@ export default function SettingsPage() {
                 {isAdmin && (
                     <section className="space-y-2">
                         <Item variant="outline" size="sm" asChild>
-                            <a href="/admin" className="block">
+                            <Link href="/admin" className="block">
                                 <ItemMedia>
                                     <Shield className="size-5" />
                                 </ItemMedia>
@@ -99,7 +99,7 @@ export default function SettingsPage() {
                                 <ItemActions>
                                     <ChevronRightIcon className="size-4" />
                                 </ItemActions>
-                            </a>
+                            </Link>
                         </Item>
                     </section>
                 )}

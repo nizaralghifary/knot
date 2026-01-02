@@ -1,12 +1,12 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db/drizzle";
-import { exams, questions } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { exams, questions, examAttempts, answers } from "@/lib/db/schema";
+import { eq, inArray } from "drizzle-orm";
 import { NextResponse, NextRequest } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise <{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -47,7 +47,7 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  context: { params: Promise <{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -104,6 +104,75 @@ export async function PUT(
     console.error("Error updating exam:", error);
     return NextResponse.json(
       { error: "Failed to update exam" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+
+    if (!session || session.user.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await context.params;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Exam ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const [exam] = await db
+      .select()
+      .from(exams)
+      .where(eq(exams.id, id));
+
+    if (!exam) {
+      return NextResponse.json(
+        { error: "Exam not found" },
+        { status: 404 }
+      );
+    }
+
+    await db.transaction(async (tx) => {
+      const questionList = await tx
+        .select({ id: questions.id })
+        .from(questions)
+        .where(eq(questions.exam_id, id));
+
+      const questionIds = questionList.map(q => q.id);
+
+      if (questionIds.length > 0) {
+        await tx.delete(answers)
+          .where(inArray(answers.question_id, questionIds));
+      }
+
+      await tx.delete(examAttempts)
+        .where(eq(examAttempts.exam_id, id));
+
+      await tx.delete(questions)
+        .where(eq(questions.exam_id, id));
+
+      await tx.delete(exams)
+        .where(eq(exams.id, id));
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Exam deleted successfully"
+    });
+
+  } catch (error: any) {
+    console.error("Error deleting exam:", error);
+    return NextResponse.json(
+      { error: "Failed to delete exam", details: error.message },
       { status: 500 }
     );
   }

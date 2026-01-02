@@ -1,5 +1,5 @@
 {
-  "name": "knot",
+  "name": "knot-exam",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "termux": "bunx next dev --turbopack --hostname localhost",
+    "genToken": "bunx tsx ./scripts/generate-token.ts",
     "db:generate": "bunx drizzle-kit generate",
     "db:migrate": "bunx drizzle-kit migrate",
     "db:studio": "bunx drizzle-kit studio",

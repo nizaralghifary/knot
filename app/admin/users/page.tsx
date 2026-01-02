@@ -107,7 +107,7 @@ export default function UsersManagement() {
             <div className="flex items-center gap-4 mb-8">
                 <Link href="/admin">
                     <Button variant="ghost" size="icon">
-                        <ArrowLeft className="h-5 w-5" />
+                        <ArrowLeft className="h-6 w-6" />
                     </Button>
                 </Link>
                 <div>
