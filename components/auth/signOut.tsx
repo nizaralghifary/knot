@@ -1,22 +1,7 @@
-import { useEffect } from "react";
 import { signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
 
-export default function SignOut() {
-  const router = useRouter();
+export default async function SignOut() {
+  await signOut({ redirectTo: "/sign-in" });
 
-  useEffect(() => {
-    async function handleLogout() {
-      await signOut({ redirect: false });
-      router.push("/sign-in");
-    }
-
-    handleLogout();
-  }, []);
-
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-md font-semibold">Logging out...</p>
-    </div>
-  );
+  return null;
 }

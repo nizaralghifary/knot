@@ -1,5 +1,3 @@
-"use client";
-
 import SignOut from "@/components/auth/signOut";
 
 const SignOutPage = () => {
