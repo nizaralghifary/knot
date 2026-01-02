@@ -39,8 +39,6 @@ export async function GET(
       .where(eq(questions.exam_id, id))
       .orderBy(questions.order);
 
-    console.log('Raw questions from DB:', JSON.stringify(examQuestions, null, 2));
-
     const questionsToReturn = examQuestions.map((q) => {
       const baseFields = {
         id: q.id,

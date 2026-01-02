@@ -107,6 +107,7 @@ export async function POST(
 
       return {
         user_id: session.user.id,
+        attempt_id: attempt.id,
         question_id: userAnswer.question_id,
         user_answer: userAnswer.user_answer,
         is_correct: isCorrect,

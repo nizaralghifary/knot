@@ -56,6 +56,7 @@ export const questions = pgTable("questions", {
 export const answers = pgTable("answers", {
     id: uuid("id").defaultRandom().primaryKey(),
     user_id: uuid("user_id").notNull().references(() => users.id),
+    attempt_id: uuid("attempt_id").notNull().references(() => examAttempts.id, { onDelete: "cascade" }),
     question_id: uuid("question_id").notNull().references(() => questions.id, { onDelete: "cascade" }),
     user_answer: jsonb("user_answer").notNull(),
     is_correct: boolean("is_correct").notNull(),
