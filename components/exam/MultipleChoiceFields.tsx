@@ -16,6 +16,7 @@ export function MultipleChoiceFields({
   onOptionChange, 
   onQuestionChange 
 }: MultipleChoiceFieldsProps) {
+  const options = question.options || ["", "", "", ""];
   
   const getSelectedOptionIndex = (): string => {
     const correctAnswer = question.correct_answer as string;
@@ -24,30 +25,35 @@ export function MultipleChoiceFields({
       return "";
     }
     
-    const index = question.options?.findIndex(opt => opt === correctAnswer);
+    const index = options.findIndex(opt => opt === correctAnswer);
     
-    if (index !== undefined && index >= 0) {
-      return index.toString();
+    if (index === -1) {
+      console.warn(`Correct answer "${correctAnswer}" not found in options`);
+      return "";
     }
     
-    return "";
+    return index.toString();
   };
 
   const handleRadioChange = (selectedIndex: string) => {
     const index = parseInt(selectedIndex);
-    const selectedOptionText = question.options?.[index] || "";
+    const selectedOptionText = options[index] || "";
     
-    onQuestionChange(question.id, "correct_answer", selectedOptionText);
+    if (selectedOptionText.trim()) {
+      onQuestionChange(question.id, "correct_answer", selectedOptionText);
+    }
   };
 
   const handleOptionInputChange = (optIndex: number, value: string) => {
     onOptionChange(question.id, optIndex, value);
     
-    const currentSelectedIndex = getSelectedOptionIndex();
-    if (currentSelectedIndex === optIndex.toString()) {
+    if (question.correct_answer === options[optIndex]) {
       onQuestionChange(question.id, "correct_answer", value);
     }
   };
+
+  const selectedIndex = getSelectedOptionIndex();
+  const selectedOptionText = selectedIndex ? options[parseInt(selectedIndex)] : "";
 
   return (
     <div className="space-y-4">
