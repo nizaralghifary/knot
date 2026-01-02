@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Search, CircleEllipsis, EllipsisVertical, Trash2 } from "lucide-react";
+import { ArrowLeft, Search, CircleEllipsis, Trophy, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -226,7 +226,13 @@ export default function UsersManagement() {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/admin/users/${user.username}`}>
+                                                            <Trophy className="h-4 w-4 mr-2" />
+                                                            Exam Results
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    {/*<DropdownMenuItem
                                                         className="text-destructive"
                                                         onClick={() =>
                                                             setDeleteUserId(user.id)
@@ -234,7 +240,7 @@ export default function UsersManagement() {
                                                     >
                                                         <Trash2 className="h-4 w-4 mr-2" />
                                                         Delete User
-                                                    </DropdownMenuItem>
+                                                    </DropdownMenuItem>*/}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>

@@ -59,26 +59,30 @@ export function MultipleChoiceFields({
       </div>
       
       <RadioGroup
-        value={getSelectedOptionIndex()}
+        value={selectedIndex}
         onValueChange={handleRadioChange}
         className="space-y-4"
       >
-        {question.options!.map((option, optIndex) => (
+        {options.map((option, optIndex) => (
           <div key={optIndex} className="space-y-2">
             <div className="flex items-center gap-3">
               <RadioGroupItem 
                 value={optIndex.toString()} 
                 id={`q${question.id}-opt${optIndex}`}
+                disabled={!option.trim()}
               />
               <Label 
                 htmlFor={`q${question.id}-opt${optIndex}`}
-                className="font-normal cursor-pointer flex-1"
+                className={`font-normal flex-1 ${!option.trim() ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
               >
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium rounded-full bg-primary/10 text-primary">
                     {String.fromCharCode(65 + optIndex)}
                   </span>
                   <span className="text-sm">Option {String.fromCharCode(65 + optIndex)}</span>
+                  {!option.trim() && (
+                    <span className="text-xs text-red-500">(empty)</span>
+                  )}
                 </div>
               </Label>
             </div>
@@ -92,7 +96,7 @@ export function MultipleChoiceFields({
                 required
               />
               
-              {getSelectedOptionIndex() === optIndex.toString() && (
+              {selectedIndex === optIndex.toString() && (
                 <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
                   <span className="inline-block w-2 h-2 bg-green-600 rounded-full"></span>
                   This is the correct answer
@@ -103,12 +107,12 @@ export function MultipleChoiceFields({
         ))}
       </RadioGroup>
       
-      {getSelectedOptionIndex() && (
+      {selectedIndex && selectedOptionText.trim() && (
         <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
           <p className="text-sm text-blue-700 dark:text-blue-300">
             <span className="font-medium">Selected answer:</span> "
-            {question.options?.[parseInt(getSelectedOptionIndex())] || ""}
-            " (Option {String.fromCharCode(65 + parseInt(getSelectedOptionIndex()))})
+            {selectedOptionText}
+            " (Option {String.fromCharCode(65 + parseInt(selectedIndex))})
           </p>
         </div>
       )}

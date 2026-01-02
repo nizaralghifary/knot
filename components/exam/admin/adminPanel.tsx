@@ -224,7 +224,7 @@ export default function AdminPanel({
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
             <CardTitle>Manage Users</CardTitle>
@@ -235,21 +235,6 @@ export default function AdminPanel({
               <Button variant="outline" className="w-full justify-start gap-2">
                 <Users className="h-4 w-4" />
                 View Users Management
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Exam Analytics</CardTitle>
-            <CardDescription>View exam performance</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/admin/analytics">
-              <Button variant="outline" className="w-full justify-start gap-2">
-                <BarChart3 className="h-4 w-4" />
-                View Analytics
               </Button>
             </Link>
           </CardContent>

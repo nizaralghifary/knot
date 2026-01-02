@@ -50,7 +50,7 @@ export default function SettingsPage() {
                 <Link href="/">
                     <ArrowLeft className="mb-3 h-6 w-6" />
                 </Link>
-                <p className="text-2xl font-semibold">Settings</p>
+                <p className="text-2xl font-semibold text-center">Settings</p>
                 <div className="w-20"></div>
             </div>
 
@@ -80,8 +80,8 @@ export default function SettingsPage() {
                             <p>{session?.user?.email ?? "N/A"}</p>
                         </div>
                     </div>
-                    <Button variant="destructive" onClick={handleLogout} className="w-full mt-4">
-                        <LogOut className="mr-2"/>
+                    <Button variant="destructive" onClick={handleLogout} className="mt-2">
+                        <LogOut className="h-5 w-5"/>
                         Logout
                     </Button>
                 </section>

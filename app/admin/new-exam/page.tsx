@@ -332,7 +332,7 @@ export default function NewExamPage() {
           <Button variant="ghost" onClick={() => router.back()} className="gap-2">
             <ArrowLeft className="h-6 w-6" />
           </Button>
-          <h1 className="text-xl text-center font-semibold">Create New Exam</h1>
+          <h1 className="text-xl">Create New Exam</h1>
           <div className="w-20"></div>
         </div>
 
