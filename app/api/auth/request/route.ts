@@ -15,7 +15,7 @@ const sendOTPEmail = async (email: string, otp: string) => {
   const message = `Your Knot OTP code is: ${otp}. It will expire in 5 minutes`;
 
   await resend.emails.send({
-    from: "Knot <auth@nizaralghifary.my.id>",
+    from: "Knot Verification <auth@nizaralghifary.my.id>",
     to: email,
     subject,
     text: message,

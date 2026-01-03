@@ -1,1 +1,0 @@
-ALTER TABLE "otp_codes" RENAME COLUMN "uid" TO "id";

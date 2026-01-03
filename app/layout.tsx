@@ -4,7 +4,7 @@ import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-
+import { Analytics } from "@vercel/analytics/next";
 import { SessionProvider } from "next-auth/react";
 
 const geistSans = Geist({
@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Knot",
+  title: "KnotExam",
   description: "An Exam Platform",
 };
 
@@ -37,11 +37,11 @@ export default async function RootLayout({
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
-          enableSystem
           disableTransitionOnChange
           storageKey="knot-theme"
         >
           {children}
+          <Analytics/>
           <Toaster />
         </ThemeProvider>
        </SessionProvider>

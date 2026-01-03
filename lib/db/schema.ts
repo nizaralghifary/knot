@@ -23,6 +23,14 @@ export const otpCodes = pgTable("otp_codes", {
 	expires_at: timestamp("expires_at").notNull()
 });
 
+export const apiKeys = pgTable("api_keys", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: text("name").notNull(),
+    token: text("token").notNull(),
+    is_active: boolean("is_active").default(true).notNull(),
+    created_at: timestamp("created_at").defaultNow().notNull()
+});
+
 export const exams = pgTable("exams", {
     id: uuid("id").defaultRandom().primaryKey(),
     title: text("title").notNull(),
@@ -48,7 +56,8 @@ export const questions = pgTable("questions", {
 export const answers = pgTable("answers", {
     id: uuid("id").defaultRandom().primaryKey(),
     user_id: uuid("user_id").notNull().references(() => users.id),
-    question_id: uuid("question_id").notNull().references(() => exams.id, { onDelete: "cascade" }),
+    attempt_id: uuid("attempt_id").notNull().references(() => examAttempts.id, { onDelete: "cascade" }),
+    question_id: uuid("question_id").notNull().references(() => questions.id, { onDelete: "cascade" }),
     user_answer: jsonb("user_answer").notNull(),
     is_correct: boolean("is_correct").notNull(),
     points_earned: integer("points_earned").notNull().default(0),
@@ -67,6 +76,7 @@ export const examAttempts = pgTable("exam_attempts", {
 
 export type Users = InferSelectModel<typeof users>;
 export type OtpCodes = InferSelectModel<typeof otpCodes>;
+export type ApiKeys = InferSelectModel<typeof apiKeys>;
 export type Exams = InferSelectModel<typeof exams>;
 export type Questions = InferSelectModel<typeof questions>;
 export type Answers = InferSelectModel<typeof answers>;

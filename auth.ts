@@ -64,7 +64,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         if (!user.is_verified) {
-          throw new Error("Your account is not verified. Please verify via OTP.");
+          throw new Error("Your account is not verified. Please verify via OTP");
         }
 
         return { 

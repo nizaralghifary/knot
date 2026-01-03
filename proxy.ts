@@ -3,6 +3,11 @@ import type { NextRequest, ProxyConfig } from "next/server";
 import { auth } from "@/auth";
 
 export async function proxy(request: NextRequest) {
+    const response = NextResponse.next();
+
+    const corsResponse = handleCORS(response, request);
+    if (corsResponse) return corsResponse;
+
     const { pathname } = request.nextUrl;
     const session = await auth();
 
@@ -13,9 +18,7 @@ export async function proxy(request: NextRequest) {
         pathname.startsWith("/sign-out") ||
         pathname.startsWith("/verify") ||
         pathname.startsWith("/verify/otp") ||
-        pathname.startsWith("/api/auth") ||
-        pathname === "favicon.ico" ||
-        pathname === ""
+        pathname.startsWith("/api/auth") 
     ) {
         return NextResponse.next();
     }
@@ -36,7 +39,7 @@ export async function proxy(request: NextRequest) {
 };
 
 function handleCORS(response: NextResponse, request: NextRequest) {
-    const origin = request.headers.get("origin") || "https://knot.nizar.my.id";
+    const origin = "https://knot.nizar.my.id";
 
     response.headers.set("Access-Control-Allow-Origin", origin);
     response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
