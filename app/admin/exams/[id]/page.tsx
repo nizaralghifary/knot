@@ -291,7 +291,7 @@ function SummaryItem({
   return (
     <div className="p-4 bg-muted rounded">
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="text-2xl font-bold">{value}</p>
+      <p className="text-2xl font-semibold">{value}</p>
     </div>
   );
 }
