@@ -4,8 +4,6 @@ import { answers, examAttempts, questions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse, NextRequest } from "next/server";
 
-type MatchingAnswer = Record<string, string>;
-
 export async function POST(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -47,11 +45,30 @@ export async function POST(
       let isCorrect = false;
       let pointsEarned = 0;
 
-      const correctAnswer = question.correct_answer;
+      const safeParse = (data: any): any => {
+        if (!data) return null;
+        if (typeof data === 'string') {
+          try {
+            return JSON.parse(data);
+          } catch {
+            return data;
+          }
+        }
+        return data;
+      };
+
+      const correctAnswer = safeParse(question.correct_answer);
 
       if (question.question_type === "multiple_choice") {
         const userAns = String(userAnswer.user_answer || "").trim();
-        const correctAns = String(correctAnswer || "").trim();
+        
+        let correctAns = "";
+        if (typeof correctAnswer === 'string') {
+          correctAns = correctAnswer.trim();
+        } else if (Array.isArray(correctAnswer) && correctAnswer.length > 0) {
+          correctAns = String(correctAnswer[0]).trim();
+        }
+        
         isCorrect = userAns === correctAns;
         
       } else if (question.question_type === "short_answer") {
@@ -62,8 +79,8 @@ export async function POST(
             String(ans).toLowerCase().trim()
           );
           isCorrect = correctAnswers.includes(userAns);
-        } else {
-          const correctAns = String(correctAnswer || "").toLowerCase().trim();
+        } else if (typeof correctAnswer === 'string') {
+          const correctAns = correctAnswer.toLowerCase().trim();
           isCorrect = userAns === correctAns;
         }
         
@@ -72,31 +89,29 @@ export async function POST(
         
         if (!userAns || typeof userAns !== 'object') {
           isCorrect = false;
-        } else if (!correctAnswer || typeof correctAnswer !== 'object') {
+        } else if (!correctAnswer || !Array.isArray(correctAnswer)) {
           isCorrect = false;
-        } else {
-          const correctAnsTyped = correctAnswer as MatchingAnswer;
-          const userAnsTyped = userAns as MatchingAnswer;
+        } else {  
+          const userAnsObj = userAns;
+          const correctPairs = correctAnswer;
           
-          const correctKeys = Object.keys(correctAnsTyped);
-          const userKeys = Object.keys(userAnsTyped);
+          let correctMatches = 0;
+          let totalPairs = 0;
           
-          if (userKeys.length !== correctKeys.length) {
-            isCorrect = false;
-          } else {
-            let correctMatches = 0;
-            
-            for (const leftItem of correctKeys) {
-              const correctRight = String(correctAnsTyped[leftItem] || "").trim();
-              const userRight = String(userAnsTyped[leftItem] || "").trim();
+          for (const pair of correctPairs) {
+            if (pair && pair.left && pair.right) {
+              totalPairs++;
+              const left = String(pair.left).trim();
+              const correctRight = String(pair.right).trim();
+              const userRight = String(userAnsObj[left] || "").trim();
               
               if (userRight === correctRight) {
                 correctMatches++;
               }
             }
-            
-            isCorrect = correctMatches === correctKeys.length;
           }
+          
+          isCorrect = totalPairs > 0 && correctMatches === totalPairs;
         }
       }
 
@@ -105,11 +120,17 @@ export async function POST(
         totalScore += pointsEarned;
       }
 
+      let userAnswerToStore = userAnswer.user_answer;
+      
+      if (userAnswerToStore && typeof userAnswerToStore === 'object') {
+        userAnswerToStore = JSON.stringify(userAnswerToStore);
+      }
+
       return {
         user_id: session.user.id,
         attempt_id: attempt.id,
         question_id: userAnswer.question_id,
-        user_answer: userAnswer.user_answer,
+        user_answer: userAnswerToStore,
         is_correct: isCorrect,
         points_earned: pointsEarned,
       };

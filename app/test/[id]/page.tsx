@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 
 interface MatchingPair {
   left: string;
+  right: string;
 }
 
 interface Question {
@@ -504,7 +505,7 @@ export default function TestPage() {
                     <div className="text-center text-sm text-muted-foreground">
                       Matched: {Object.keys(answers[question.id] || {}).length} / {question.matching_pairs.length}
                     </div>
-                  </div>
+                    </div>
                 )}
               </CardContent>
             </Card>
@@ -521,11 +522,12 @@ export default function TestPage() {
             >
               {submitting ? (
                 <>
-                  <Spinner size="lg" />
+                  <Spinner className="mr-2" />
                   Submitting...
                 </>
               ) : (
                 <>
+                  <Send className="mr-2 h-4 w-4" />
                   Submit Exam
                 </>
               )}

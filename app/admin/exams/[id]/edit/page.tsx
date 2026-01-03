@@ -45,20 +45,6 @@ export default function EditExamPage({ params }: PageProps) {
   }, [params]);
 
   useEffect(() => {
-    if (status === "loading") return;
-
-    if (!session) {
-      router.push("/sign-in");
-      return;
-    }
-
-    if (session?.user.role !== "admin") {
-      router.push("/");
-      return;
-    }
-  }, [session, status, router]);
-
-  useEffect(() => {
     if (!examId) return;
 
     const fetchExamData = async () => {
@@ -78,80 +64,39 @@ export default function EditExamPage({ params }: PageProps) {
           is_published: data.is_published,
         });
 
-        const safeParse = (str: string) => {
-          try {
-            return JSON.parse(str);
-          } catch {
-            return str;
-          }
-        };
-
         const parsedQuestions: Question[] = data.questions.map((q: any) => {
-          try {
-            if (q.question_type === "multiple_choice") {
-              const options = safeParse(q.options || "[]");
-              const correct_answer = safeParse(q.correct_answer || "");
-              
-              return {
-                id: q.id,
-                question_text: q.question_text,
-                question_type: "multiple_choice" as const,
-                options: Array.isArray(options) ? options : [],
-                correct_answer: typeof correct_answer === "string" ? correct_answer : "",
-                points: q.points,
-                order: q.order,
-              };
-            } else if (q.question_type === "short_answer") {
-              const correct_answer = safeParse(q.correct_answer || "");
-              
-              return {
-                id: q.id,
-                question_text: q.question_text,
-                question_type: "short_answer" as const,
-                correct_answer: typeof correct_answer === "string" ? correct_answer : "",
-                points: q.points,
-                order: q.order,
-              };
-            } else if (q.question_type === "matching") {
-              const matching_pairs = safeParse(q.options || "[]");
-              const correct_answer = safeParse(q.correct_answer || "[]");
-              
-              return {
-                id: q.id,
-                question_text: q.question_text,
-                question_type: "matching" as const,
-                matching_pairs: Array.isArray(matching_pairs) ? matching_pairs : [],
-                correct_answer: Array.isArray(correct_answer) ? correct_answer : [],
-                points: q.points,
-                order: q.order,
-              };
-            }
-            
-            // Fallback
+          const baseQuestion = {
+            id: q.id,
+            question_text: q.question_text,
+            question_type: q.question_type,
+            points: q.points,
+            order: q.order,
+          };
+
+          if (q.question_type === "multiple_choice") {
             return {
-              id: q.id,
-              question_text: q.question_text,
-              question_type: "multiple_choice" as const,
-              options: ["", "", "", ""],
-              correct_answer: "",
-              points: q.points,
-              order: q.order,
+              ...baseQuestion,
+              options: Array.isArray(q.options) ? q.options : [],
+              correct_answer: q.correct_answer || ""
             };
-          } catch (err) {
-            console.error("Parse error:", err);
+          } else if (q.question_type === "short_answer") {
             return {
-              id: q.id,
-              question_text: q.question_text,
-              question_type: "multiple_choice" as const,
-              options: ["", "", "", ""],
-              correct_answer: "",
-              points: q.points,
-              order: q.order,
+              ...baseQuestion,
+              correct_answer: q.correct_answer || ""
+            };
+          } else if (q.question_type === "matching") {
+            return {
+              ...baseQuestion,
+              matching_pairs: Array.isArray(q.matching_pairs) ? q.matching_pairs : [],
+              correct_answer: q.correct_answer || []
             };
           }
+          
+          return baseQuestion as Question;
         });
 
         setQuestions(parsedQuestions);
+        
       } catch (error: any) {
         toast.error("Error loading exam", {
           description: error.message,
@@ -167,12 +112,28 @@ export default function EditExamPage({ params }: PageProps) {
 
   const handleSubmit = async (data: { exam: ExamData; questions: QuestionFormData[] }) => {
     try {
+      const formattedData = {
+        exam: data.exam,
+        questions: data.questions.map(q => {
+          if (q.question_type === "matching") {
+            const matchingPairs = q.matching_pairs || [];
+            return {
+              ...q,
+              options: matchingPairs,
+              correct_answer: matchingPairs,
+              right_options: undefined
+            };
+          }
+          return q;
+        })
+      };
+
       const response = await fetch(`/api/admin/exams/${examId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(formattedData)
       });
 
       const result = await response.json();

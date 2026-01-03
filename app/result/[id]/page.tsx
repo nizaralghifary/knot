@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, XCircle, Trophy, Clock } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, Trophy } from "lucide-react";
+import { MatchingDisplay } from "@/components/matching-display";
 
 export default async function ResultPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -118,27 +119,12 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
             {questionsWithAnswers.map((question, index) => {
               const isCorrect = question.userAnswer?.is_correct;
               
-              let correctAnswer: any;
+              let correctAnswer: any = question.correct_answer;
               if (typeof question.correct_answer === 'string') {
                 try {
                   correctAnswer = JSON.parse(question.correct_answer);
                 } catch (e) {
                   correctAnswer = question.correct_answer;
-                }
-              } else {
-                correctAnswer = question.correct_answer;
-              }
-
-              let options: any = null;
-              if (question.options) {
-                if (typeof question.options === 'string') {
-                  try {
-                    options = JSON.parse(question.options);
-                  } catch (e) {
-                    options = question.options;
-                  }
-                } else {
-                  options = question.options;
                 }
               }
 
@@ -146,7 +132,7 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
                 <div key={question.id}>
                   {index > 0 && <Separator className="mb-6" />}
                   
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -164,29 +150,19 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
                       )}
                     </div>
 
-                    <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-                      <div>
-                        <p className="text-sm font-medium mb-1">Your Answer:</p>
-                        <p className="text-sm">
-                          {question.userAnswer?.user_answer 
-                            ? typeof question.userAnswer.user_answer === 'object'
-                              ? JSON.stringify(question.userAnswer.user_answer)
-                              : String(question.userAnswer.user_answer)
-                            : <span className="text-muted-foreground italic">No answer provided</span>
-                          }
-                        </p>
-                      </div>
+                    <div className="space-y-3">
+                      <MatchingDisplay 
+                        data={question.userAnswer?.user_answer} 
+                        title="Your Answer" 
+                        variant={isCorrect ? "correct" : "incorrect"}
+                      />
 
                       {!isCorrect && (
-                        <div>
-                          <p className="text-sm font-medium text-green-600 mb-1">Correct Answer:</p>
-                          <p className="text-sm text-green-600">
-                            {typeof correctAnswer === 'object'
-                              ? JSON.stringify(correctAnswer)
-                              : String(correctAnswer)
-                            }
-                          </p>
-                        </div>
+                        <MatchingDisplay 
+                          data={correctAnswer} 
+                          title="Correct Answer" 
+                          variant="correct"
+                        />
                       )}
                     </div>
                   </div>

@@ -49,37 +49,71 @@ export async function GET(
         order: q.order,
       };
 
-      if (q.question_type === 'matching') {
-        const optionsData = q.options as any;
+      try {
+        const rawOptions = q.options;
+        let parsedOptions: any = null;
         
-        console.log('Processing matching question:', {
-          id: q.id,
-          raw_options: optionsData,
-          has_matching_pairs: !!(optionsData?.matching_pairs),
-          has_right_options: !!(optionsData?.right_options)
-        });
+        if (rawOptions && typeof rawOptions === 'string') {
+          try {
+            parsedOptions = JSON.parse(rawOptions);
+          } catch (parseError) {
+            console.error(`Failed to parse options for question ${q.id}:`, parseError);
+            parsedOptions = null;
+          }
+        } else if (rawOptions) {
+          parsedOptions = rawOptions; 
+        }
 
+        {/*console.log('Parsed options for question:', {
+          id: q.id,
+          type: q.question_type,
+          raw: rawOptions,
+          parsed: parsedOptions
+        });*/}
+
+        if (q.question_type === 'matching') {
+          const matchingPairs = Array.isArray(parsedOptions) 
+            ? parsedOptions.filter(pair => pair && typeof pair === 'object')
+            : [];
+          
+          const rightOptions = matchingPairs
+            .map(pair => pair.right)
+            .filter(right => right && typeof right === 'string');
+          
+          const shuffledRightOptions = [...rightOptions].sort(() => Math.random() - 0.5);
+
+          return {
+            ...baseFields,
+            matching_pairs: matchingPairs,
+            right_options: shuffledRightOptions
+          };
+        } else if (q.question_type === 'multiple_choice') {
+          const options = Array.isArray(parsedOptions) 
+            ? parsedOptions.filter(opt => typeof opt === 'string')
+            : [];
+          
+          return {
+            ...baseFields,
+            options: options
+          };
+        } else if (q.question_type === 'short_answer') {
+          return baseFields;
+        } else {
+          return {
+            ...baseFields,
+            options: []
+          };
+        }
+      } catch (error) {
+        console.error(`Error processing question ${q.id}:`, error);
         return {
           ...baseFields,
-          matching_pairs: optionsData?.matching_pairs || [],
-          right_options: optionsData?.right_options || []
-        };
-      } else if (q.question_type === 'multiple_choice') {
-        return {
-          ...baseFields,
-          options: Array.isArray(q.options) ? q.options : []
-        };
-      } else if (q.question_type === 'short_answer') {
-        return baseFields;
-      } else {
-        return {
-          ...baseFields,
-          options: Array.isArray(q.options) ? q.options : []
+          options: q.question_type === 'multiple_choice' ? [] : undefined,
+          matching_pairs: q.question_type === 'matching' ? [] : undefined,
+          right_options: q.question_type === 'matching' ? [] : undefined
         };
       }
     });
-
-    //console.log('Questions to return:', JSON.stringify(questionsToReturn, null, 2));
 
     return NextResponse.json({
       ...exam,

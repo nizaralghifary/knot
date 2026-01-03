@@ -32,9 +32,73 @@ export async function GET(
       .where(eq(questions.exam_id, id))
       .orderBy(questions.order);
 
+    const parsedQuestions = examQuestions.map((q: any) => {
+      const baseQuestion = {
+        id: q.id,
+        question_text: q.question_text,
+        question_type: q.question_type,
+        points: q.points,
+        order: q.order,
+      };
+
+      const parseIfJson = (data: any) => {
+        if (!data) return null;
+        if (typeof data === 'string') {
+          try {
+            return JSON.parse(data);
+          } catch {
+            return data;
+          }
+        }
+        return data;
+      };
+
+      const options = parseIfJson(q.options);
+      const correct_answer = parseIfJson(q.correct_answer);
+
+      if (q.question_type === "multiple_choice") {
+        return {
+          ...baseQuestion,
+          options: Array.isArray(options) ? options : [],
+          correct_answer: typeof correct_answer === 'string' ? correct_answer : ""
+        };
+      } else if (q.question_type === "short_answer") {
+        return {
+          ...baseQuestion,
+          correct_answer: typeof correct_answer === 'string' ? correct_answer : ""
+        };
+      } else if (q.question_type === "matching") {
+        let matchingPairs = [];
+        
+        if (Array.isArray(options)) {
+          matchingPairs = options;
+        } else if (Array.isArray(correct_answer)) {
+          matchingPairs = correct_answer;
+        }
+        
+        const formattedPairs = matchingPairs.map((pair: any) => {
+          if (pair && typeof pair === 'object') {
+            return {
+              left: String(pair.left || ""),
+              right: String(pair.right || "")
+            };
+          }
+          return { left: "", right: "" };
+        });
+
+        return {
+          ...baseQuestion,
+          matching_pairs: formattedPairs,
+          correct_answer: formattedPairs
+        };
+      }
+
+      return baseQuestion;
+    });
+
     return NextResponse.json({
       ...exam,
-      questions: examQuestions,
+      questions: parsedQuestions,
     });
   } catch (error) {
     console.error("Error fetching exam:", error);
@@ -76,14 +140,28 @@ export async function PUT(
       let options = null;
       let correct_answer = null;
 
+      {/*console.log(`Processing question ${q.order}:`, {
+        type: q.question_type,
+        options: q.options,
+        correct_answer: q.correct_answer,
+        matching_pairs: q.matching_pairs
+      });*/}
+
       if (q.question_type === "multiple_choice") {
-        options = JSON.stringify(q.options);
-        correct_answer = JSON.stringify(q.correct_answer);
+        options = JSON.stringify(q.options || []);
+        correct_answer = JSON.stringify(q.correct_answer || "");
       } else if (q.question_type === "short_answer") {
-        correct_answer = JSON.stringify(q.correct_answer);
+        correct_answer = JSON.stringify(q.correct_answer || "");
       } else if (q.question_type === "matching") {
-        options = JSON.stringify(q.correct_answer);
-        correct_answer = JSON.stringify(q.correct_answer);
+        const matchingPairs = q.matching_pairs || q.correct_answer || [];
+        
+        const formattedPairs = matchingPairs.map((pair: any) => ({
+          left: String(pair.left || ""),
+          right: String(pair.right || "")
+        }));
+        
+        options = JSON.stringify(formattedPairs);
+        correct_answer = JSON.stringify(formattedPairs);
       }
 
       return {
