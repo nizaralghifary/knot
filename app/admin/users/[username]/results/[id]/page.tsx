@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, XCircle, Trophy, Clock, User } from "lucide-react";
+import { MatchingDisplay } from "@/components/matching-display";
 
 export default async function AdminUserResultDetailPage({ 
   params 
@@ -86,6 +87,32 @@ export default async function AdminUserResultDetailPage({
   const durationMinutes = Math.floor(durationMs / 60000);
   const durationSeconds = Math.floor((durationMs % 60000) / 1000);
 
+  const formatAnswerForDisplay = (answer: any) => {
+    if (answer === null || answer === undefined) return null;
+    if (typeof answer === 'string') {
+      try {
+        return JSON.parse(answer);
+      } catch {
+        return answer;
+      }
+    }
+    return answer;
+  };
+
+  const formatMatchingData = (data: any) => {
+    const formatted = formatAnswerForDisplay(data);
+    if (Array.isArray(formatted)) {
+      const result: Record<string, string> = {};
+      formatted.forEach((pair: any) => {
+        if (pair && pair.left !== undefined) {
+          result[pair.left] = pair.right || '';
+        }
+      });
+      return result;
+    }
+    return formatted;
+  };
+
   return (
     <main className="min-h-screen p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
@@ -150,30 +177,8 @@ export default async function AdminUserResultDetailPage({
           <CardContent className="space-y-6">
             {questionsWithAnswers.map((question, index) => {
               const isCorrect = question.userAnswer?.is_correct;
-              
-              let correctAnswer: any;
-              if (typeof question.correct_answer === 'string') {
-                try {
-                  correctAnswer = JSON.parse(question.correct_answer);
-                } catch (e) {
-                  correctAnswer = question.correct_answer;
-                }
-              } else {
-                correctAnswer = question.correct_answer;
-              }
-
-              let options: any = null;
-              if (question.options) {
-                if (typeof question.options === 'string') {
-                  try {
-                    options = JSON.parse(question.options);
-                  } catch (e) {
-                    options = question.options;
-                  }
-                } else {
-                  options = question.options;
-                }
-              }
+              const correctAnswer = formatAnswerForDisplay(question.correct_answer);
+              const userAnswer = formatAnswerForDisplay(question.userAnswer?.user_answer);
 
               return (
                 <div key={question.id}>
@@ -197,28 +202,42 @@ export default async function AdminUserResultDetailPage({
                       )}
                     </div>
 
-                    <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                    <div className="bg-muted/50 rounded-lg p-4 space-y-4">
                       <div>
-                        <p className="text-sm font-medium mb-1">User's Answer:</p>
-                        <p className="text-sm">
-                          {question.userAnswer?.user_answer 
-                            ? typeof question.userAnswer.user_answer === 'object'
-                              ? JSON.stringify(question.userAnswer.user_answer)
-                              : String(question.userAnswer.user_answer)
-                            : <span className="text-muted-foreground italic">No answer provided</span>
-                          }
-                        </p>
+                        <p className="text-sm font-medium mb-2">User's Answer:</p>
+                        {question.question_type === 'matching' ? (
+                          <MatchingDisplay
+                            data={formatMatchingData(userAnswer)}
+                            variant={isCorrect ? "correct" : "incorrect"}
+                          />
+                        ) : (
+                          <p className="text-sm">
+                            {userAnswer !== null && userAnswer !== undefined
+                              ? typeof userAnswer === 'object'
+                                ? JSON.stringify(userAnswer)
+                                : String(userAnswer)
+                              : <span className="text-muted-foreground italic">No answer provided</span>
+                            }
+                          </p>
+                        )}
                       </div>
 
                       {!isCorrect && (
                         <div>
-                          <p className="text-sm font-medium text-green-600 mb-1">Correct Answer:</p>
-                          <p className="text-sm text-green-600">
-                            {typeof correctAnswer === 'object'
-                              ? JSON.stringify(correctAnswer)
-                              : String(correctAnswer)
-                            }
-                          </p>
+                          <p className="text-sm font-medium text-green-600 mb-2">Correct Answer:</p>
+                          {question.question_type === 'matching' ? (
+                            <MatchingDisplay
+                              data={formatMatchingData(correctAnswer)}
+                              variant="correct"
+                            />
+                          ) : (
+                            <p className="text-sm text-green-600">
+                              {typeof correctAnswer === 'object'
+                                ? JSON.stringify(correctAnswer)
+                                : String(correctAnswer)
+                              }
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>

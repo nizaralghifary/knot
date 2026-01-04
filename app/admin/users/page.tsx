@@ -111,10 +111,7 @@ export default function UsersManagement() {
                     </Button>
                 </Link>
                 <div>
-                    <h1 className="text-2xl font-semibold">Users Management</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Manage all registered users
-                    </p>
+                    <h1 className="text-xl font-semibold">Users Management</h1>
                 </div>
             </div>
 
