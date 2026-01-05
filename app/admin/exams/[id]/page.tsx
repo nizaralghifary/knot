@@ -23,6 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator"
 import { format } from "date-fns"
+import { MatchingDisplay } from "@/components/matching-display";
 
 interface PageProps {
   params: {
@@ -30,9 +31,39 @@ interface PageProps {
   };
 }
 
+function parseJsonSafely(data: any, fallback: any = null): any {
+  if (data === null || data === undefined) return fallback;
+  if (typeof data === 'string') {
+    try {
+      return JSON.parse(data);
+    } catch {
+      return data;
+    }
+  }
+  return data;
+}
+
+function formatMatchingData(data: any): any {
+  const parsed = parseJsonSafely(data);
+  if (Array.isArray(parsed)) {
+    const result: Record<string, string> = {};
+    parsed.forEach((pair: any) => {
+      if (pair && pair.left !== undefined) {
+        result[String(pair.left)] = String(pair.right || '');
+      }
+    });
+    return result;
+  }
+  if (parsed && typeof parsed === 'object') {
+    return parsed;
+  }
+  return {};
+}
+
 export default async function ExamDetailPage({ params }: PageProps) {
   const { id } = await params;
   const session = await auth();
+  
   if (!session || session.user.role !== "admin") {
     redirect("/");
   }
@@ -97,59 +128,78 @@ export default async function ExamDetailPage({ params }: PageProps) {
 
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <InfoItem
-                icon={<Clock className="h-5 w-5" />}
-                label="Duration"
-                value={`${exam.duration} minutes`}
-              />
-              <InfoItem
-                icon={<FileText className="h-5 w-5" />}
-                label="Questions"
-                value={`${examQuestions.length}`}
-              />
-              <InfoItem
-                icon={<User className="h-5 w-5" />}
-                label="Created By"
-                value={exam.creator_username || "Unknown"}
-              />
-              <InfoItem
-                icon={<Calendar className="h-5 w-5" />}
-                label="Created Date"
-                value={format(new Date(exam.created_at), "MMM d, yyyy")}
-              />
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded bg-muted">
+                  <Clock className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Duration</p>
+                  <p className="font-medium">{`${exam.duration} minutes`}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded bg-muted">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Questions</p>
+                  <p className="font-medium">{`${examQuestions.length}`}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded bg-muted">
+                  <User className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Created By</p>
+                  <p className="font-medium">{exam.creator_username || "Unknown"}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded bg-muted">
+                  <Calendar className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Created Date</p>
+                  <p className="font-medium">
+                    {format(new Date(exam.created_at), "MMM d, yyyy")}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <Separator className="my-6" />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <SummaryItem
-                label="Total Points"
-                value={`${examQuestions.reduce(
-                  (sum, q) => sum + q.points,
-                  0
-                )}`}
-              />
-              <SummaryItem
-                label="Average Points"
-                value={
-                  examQuestions.length > 0
-                    ? `${Math.round(
-                        (examQuestions.reduce(
-                          (sum, q) => sum + q.points,
-                          0
-                        ) /
+              <div className="p-4 bg-muted rounded">
+                <p className="text-sm text-muted-foreground">Total Points</p>
+                <p className="text-2xl font-semibold">
+                  {examQuestions.reduce((sum, q) => sum + q.points, 0)}
+                </p>
+              </div>
+              
+              <div className="p-4 bg-muted rounded">
+                <p className="text-sm text-muted-foreground">Average Points</p>
+                <p className="text-2xl font-semibold">
+                  {examQuestions.length > 0
+                    ? Math.round(
+                        (examQuestions.reduce((sum, q) => sum + q.points, 0) /
                           examQuestions.length) *
                           10
-                      ) / 10}`
-                    : "0"
-                }
-              />
-              <SummaryItem
-                label="Question Types"
-                value={`${new Set(
-                  examQuestions.map((q) => q.question_type)
-                ).size}`}
-              />
+                      ) / 10
+                    : 0}
+                </p>
+              </div>
+              
+              <div className="p-4 bg-muted rounded">
+                <p className="text-sm text-muted-foreground">Question Types</p>
+                <p className="text-2xl font-semibold">
+                  {new Set(examQuestions.map((q) => q.question_type)).size}
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -162,31 +212,33 @@ export default async function ExamDetailPage({ params }: PageProps) {
 
           <CardContent className="space-y-4">
             {examQuestions.map((question, index) => {
-              let options: string[] = [];
-              let correctAnswer: number | string | null = null;
-              let matchingPairs: { left: string; right: string }[] = [];
+              const options = parseJsonSafely(question.options, []);
+              const correctAnswer = parseJsonSafely(question.correct_answer);
+              
+              let displayOptions: string[] = [];
+              let displayCorrectAnswer: string | string[] = '';
+              let matchingData: any = null;
 
-              try {
-                if (question.options) {
-                  const parsed = JSON.parse(question.options as string);
-                  if (question.question_type === "multiple_choice") {
-                    options = parsed as string[];
-                  }
-                  if (question.question_type === "matching") {
-                    matchingPairs = parsed as {
-                      left: string;
-                      right: string;
-                    }[];
-                  }
+              if (question.question_type === "multiple_choice") {
+                displayOptions = Array.isArray(options) 
+                  ? options.map(opt => String(opt))
+                  : [];
+                
+                if (Array.isArray(correctAnswer)) {
+                  displayCorrectAnswer = String(correctAnswer[0] || '');
+                } else {
+                  displayCorrectAnswer = String(correctAnswer || '');
                 }
-
-                if (question.correct_answer) {
-                  correctAnswer = JSON.parse(
-                    question.correct_answer as string
-                  );
+              } 
+              else if (question.question_type === "short_answer") {
+                if (Array.isArray(correctAnswer)) {
+                  displayCorrectAnswer = correctAnswer.map(ans => String(ans));
+                } else {
+                  displayCorrectAnswer = [String(correctAnswer || '')];
                 }
-              } catch (err) {
-                console.error("Parse error:", err);
+              } 
+              else if (question.question_type === "matching") {
+                matchingData = formatMatchingData(options);
               }
 
               return (
@@ -205,7 +257,7 @@ export default async function ExamDetailPage({ params }: PageProps) {
                             {question.question_type.replace("_", " ")}
                           </Badge>
                           <Badge variant="secondary">
-                            {question.points} point
+                            {question.points} point{question.points > 1 ? 's' : ''}
                           </Badge>
                         </div>
                       </div>
@@ -213,43 +265,65 @@ export default async function ExamDetailPage({ params }: PageProps) {
                   </CardHeader>
 
                   <CardContent>
-                    {question.question_type === "multiple_choice" &&
-                      options.map((opt, i) => {
-                        const isCorrect = i === correctAnswer;
-                        return (
-                          <div
-                            key={i}
-                            className={`p-3 mb-2 rounded border ${
-                              isCorrect
-                                ? "bg-green-100 dark:bg-green-950 border-green-400"
-                                : "bg-muted"
-                            }`}
-                          >
-                            <strong>{String.fromCharCode(65 + i)}.</strong>{" "}
-                            {opt}
-                          </div>
-                        );
-                      })}
-
-                    {question.question_type === "short_answer" && (
-                      <div className="p-3 bg-muted rounded">
-                        {correctAnswer !== null
-                          ? String(correctAnswer)
-                          : "—"}
+                    {question.question_type === "multiple_choice" && (
+                      <div className="space-y-2">
+                        {displayOptions.map((opt, i) => {
+                          const isCorrect = opt === displayCorrectAnswer;
+                          return (
+                            <div
+                              key={i}
+                              className={`p-3 rounded border ${
+                                isCorrect
+                                  ? "bg-green-100 dark:bg-green-900 border-green-300"
+                                  : "bg-muted border-border"
+                              }`}
+                            >
+                              <span className="font-semibold">
+                                {String.fromCharCode(65 + i)}.
+                              </span>{" "}
+                              {opt}
+                              {isCorrect && (
+                                <Badge className="ml-2" variant="outline">
+                                  Correct
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
 
-                    {question.question_type === "matching" &&
-                      matchingPairs.map((pair, i) => (
-                        <div
-                          key={i}
-                          className="flex justify-between p-3 bg-muted rounded mb-2"
-                        >
-                          <span>{pair.left}</span>
-                          <span>→</span>
-                          <span>{pair.right}</span>
+                    {question.question_type === "short_answer" && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">
+                          Correct Answer{displayCorrectAnswer.length > 1 ? 's' : ''}:
+                        </p>
+                        <div className="space-y-1">
+                          {Array.isArray(displayCorrectAnswer) 
+                            ? displayCorrectAnswer.map((ans, idx) => (
+                                <div key={idx} className="p-3 bg-green-100 dark:bg-green-900 rounded border border-green-300">
+                                  {ans}
+                                </div>
+                              ))
+                            : <div className="p-3 bg-green-100 dark:bg-green-900 rounded border border-green-300">
+                                {displayCorrectAnswer}
+                              </div>
+                          }
                         </div>
-                      ))}
+                      </div>
+                    )}
+
+                    {question.question_type === "matching" && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">
+                          Matching Pairs:
+                        </p>
+                        <MatchingDisplay 
+                          data={matchingData}
+                          variant="default"
+                        />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );
@@ -258,40 +332,5 @@ export default async function ExamDetailPage({ params }: PageProps) {
         </Card>
       </div>
     </main>
-  );
-}
-
-function InfoItem({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="p-2 rounded bg-muted">{icon}</div>
-      <div>
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="font-medium">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function SummaryItem({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="p-4 bg-muted rounded">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="text-2xl font-semibold">{value}</p>
-    </div>
   );
 }

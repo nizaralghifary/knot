@@ -82,9 +82,13 @@ export default function NewExamPage() {
       questions.map((q) => {
         if (q.id === questionId) {
           const newPairs = q.matching_pairs || [];
+          const updatedPairs = [...newPairs, { left: "", right: "" }];
+          
           return {
             ...q,
-            matching_pairs: [...newPairs, { left: "", right: "" }],
+            matching_pairs: updatedPairs,
+            options: updatedPairs,
+            correct_answer: updatedPairs,
           };
         }
         return q;
@@ -97,9 +101,11 @@ export default function NewExamPage() {
       questions.map((q) => {
         if (q.id === questionId && q.matching_pairs) {
           const newPairs = q.matching_pairs.filter((_, idx) => idx !== pairIndex);
+          
           return {
             ...q,
             matching_pairs: newPairs,
+            options: newPairs,
             correct_answer: newPairs,
           };
         }
@@ -123,6 +129,7 @@ export default function NewExamPage() {
           return {
             ...q,
             matching_pairs: newPairs,
+            options: newPairs,
             correct_answer: newPairs,
           };
         }
@@ -144,7 +151,7 @@ export default function NewExamPage() {
           : q
       )
     );
-  }
+  };
 
   const handleQuestionTypeChange = (
     questionId: string,
@@ -170,12 +177,13 @@ export default function NewExamPage() {
               matching_pairs: undefined,
             };
           } else if (type === "matching") {
+            const initialPairs = [{ left: "", right: "" }];
             return {
               ...q,
               question_type: type,
-              options: undefined,
-              matching_pairs: [{ left: "", right: "" }],
-              correct_answer: [{ left: "", right: "" }],
+              options: initialPairs,
+              matching_pairs: initialPairs,
+              correct_answer: initialPairs,
             };
           }
         }
@@ -279,7 +287,7 @@ export default function NewExamPage() {
       } else if (q.question_type === "matching") {
         return {
           ...baseQuestion,
-          options: undefined,
+          options: q.matching_pairs,
           correct_answer: q.matching_pairs,
         };
       }
