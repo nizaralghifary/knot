@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Clock, Send, AlertCircle, Shuffle, X } from "lucide-react";
+import { ArrowLeft, Clock, AlertCircle, Shuffle, X } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -225,9 +225,6 @@ export default function TestPage() {
               <Button asChild className="flex-1">
                 <Link href="/">Back to Home</Link>
               </Button>
-              <Button asChild variant="outline" className="flex-1">
-                <Link href="/result">View Results</Link>
-              </Button>
             </div>
           </CardContent>
         </Card>
@@ -341,9 +338,6 @@ export default function TestPage() {
                 {question.question_type === "matching" && question.matching_pairs && (
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-muted-foreground">
-                        Select an item from the left, then select its match on the right
-                      </p>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Shuffle className="h-3 w-3" />
                         <span>Items randomized</span>
@@ -527,7 +521,6 @@ export default function TestPage() {
                 </>
               ) : (
                 <>
-                  <Send className="mr-2 h-4 w-4" />
                   Submit Exam
                 </>
               )}

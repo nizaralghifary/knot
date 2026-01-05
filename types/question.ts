@@ -7,9 +7,9 @@ export type Question = {
     id: string;
     question_text: string;
     question_type: "multiple_choice" | "short_answer" | "matching";
-    options?: string[];
+    options?: string[] | MatchingPair[];
     matching_pairs?: MatchingPair[];
-    correct_answer: string | string[] | MatchingPair[];
+    correct_answer?: string | string[] | MatchingPair[];
     points: number;
     order: number;
 };

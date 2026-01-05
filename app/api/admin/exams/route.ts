@@ -19,35 +19,16 @@ const matchingPairSchema = z.object({
 const questionSchema = z.object({
   question_text: z.string().min(1, "Question text is required"),
   question_type: z.enum(["multiple_choice", "short_answer", "matching"]),
-  options: z.array(z.string()).optional(),
-  correct_answer: z.union([
-    z.string(),
-    z.string().array(),
-    matchingPairSchema.array()
-  ]),
+  options: z.any().optional(),
+  correct_answer: z.any(),
   points: z.number().min(1, "Points must be at least 1"),
   order: z.number().min(1),
-}).refine((data) => {
-  if (data.question_type === "multiple_choice") {
-    if (!data.options || data.options.length === 0) {
-      return false;
-    }
-    return typeof data.correct_answer === "string";
-  }
-  
-  if (data.question_type === "short_answer") {
-    return typeof data.correct_answer === "string" && data.correct_answer.trim().length > 0;
-  }
-  
-  if (data.question_type === "matching") {
-    return Array.isArray(data.correct_answer) && data.correct_answer.length > 0;
-  }
-  
-  return true;
-}, {
-  message: "Invalid data for question type",
-  path: ["correct_answer"]
 });
+
+interface MatchingPair {
+  left: any;
+  right: any;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,76 +52,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const validatedQuestions = questionsData.map((q, index) => {
-      try {
-        return questionSchema.parse({ 
-          ...q, 
-          order: index + 1 
-        });
-      } catch (error) {
-        throw new Error(`Question ${index + 1}: ${error instanceof z.ZodError ? error.errors[0].message : "Invalid data"}`);
+    const [newExam] = await db.insert(exams).values({
+      ...validatedExam,
+      created_by: session.user.id,
+    }).returning();
+
+    for (const q of questionsData) {
+      let optionsValue = null;
+      let correctAnswerValue = null;
+
+      if (q.question_type === "multiple_choice") {
+        const options = Array.isArray(q.options) ? q.options : [];
+        const correctAnswer = String(q.correct_answer || "");
+        
+        optionsValue = options;
+        correctAnswerValue = correctAnswer;
+      } 
+      else if (q.question_type === "short_answer") {
+        const correctAnswer = q.correct_answer;
+        
+        if (Array.isArray(correctAnswer)) {
+          correctAnswerValue = correctAnswer;
+        } else {
+          correctAnswerValue = [String(correctAnswer || "")];
+        }
       }
-    });
+      else if (q.question_type === "matching") {
+        const matchingPairs = Array.isArray(q.correct_answer) 
+          ? q.correct_answer 
+          : [];
+        
+        const validPairs = matchingPairs.filter((pair: any) => 
+          pair && 
+          typeof pair === 'object' && 
+          pair.left && 
+          pair.right
+        );
+        
+        optionsValue = validPairs;
+        correctAnswerValue = validPairs;
+      }
 
-    const result = await db.transaction(async (tx) => {
-      const [newExam] = await tx.insert(exams).values({
-        ...validatedExam,
-        created_by: session.user.id,
-      }).returning();
-
-      const examQuestions = validatedQuestions.map(q => {
-        let optionsValue = null;
-        let correctAnswerValue = null;
-
-        if (q.question_type === "multiple_choice") {
-          optionsValue = q.options || [];
-          correctAnswerValue = q.correct_answer;
-        } 
-        else if (q.question_type === "short_answer") {
-          optionsValue = null;
-          correctAnswerValue = q.correct_answer;
-        }
-        else if (q.question_type === "matching") {
-          const matchingPairs = q.correct_answer as Array<{left: string, right: string}>;
-          
-          const matching_pairs = matchingPairs.map(pair => ({ left: pair.left }));
-          
-          const right_options = matchingPairs.map(pair => pair.right);
-          const shuffled_right_options = right_options.sort(() => Math.random() - 0.5);
-          
-          optionsValue = {
-            matching_pairs,
-            right_options: shuffled_right_options
-          };
-          
-          correctAnswerValue = matchingPairs.reduce((acc, pair) => {
-            acc[pair.left] = pair.right;
-            return acc;
-          }, {} as Record<string, string>);
-        }
-
-        return {
-          exam_id: newExam.id,
-          question_text: q.question_text,
-          question_type: q.question_type,
-          options: optionsValue,
-          correct_answer: correctAnswerValue,
-          points: q.points,
-          order: q.order,
-        };
+      await db.insert(questions).values({
+        exam_id: newExam.id,
+        question_text: String(q.question_text || ""),
+        question_type: q.question_type,
+        options: optionsValue,
+        correct_answer: correctAnswerValue,
+        points: Number(q.points) || 1,
+        order: Number(q.order) || 1,
       });
-
-      const newQuestions = await tx.insert(questions).values(examQuestions).returning();
-
-      return {
-        exam: newExam,
-        questions: newQuestions,
-      };
-    });
+    }
 
     return NextResponse.json({
       success: true,
-      data: result,
+      examId: newExam.id,
       message: "Exam created successfully",
     });
 
@@ -152,14 +118,13 @@ export async function POST(request: NextRequest) {
         { 
           error: "Validation error", 
           details: error.errors,
-          message: error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
         },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: "Failed to create exam" },
       { status: 500 }
     );
   }
