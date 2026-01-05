@@ -25,6 +25,11 @@ const questionSchema = z.object({
   order: z.number().min(1),
 });
 
+interface MatchingPair {
+  left: any;
+  right: any;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
@@ -77,7 +82,7 @@ export async function POST(request: NextRequest) {
           ? q.correct_answer 
           : [];
         
-        const validPairs = matchingPairs.filter(pair => 
+        const validPairs = matchingPairs.filter((pair: any) => 
           pair && 
           typeof pair === 'object' && 
           pair.left && 
