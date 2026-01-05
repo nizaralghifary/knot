@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -19,18 +20,21 @@ export default function SignUp() {
   const [otpModal, setOtpModal] = useState(false);
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [otpLoading, setOtpLoading] = useState(false);
+  const [agree, setAgree] = useState(false);
   const router = useRouter();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!agree) {
+      toast("Hold on!", { description: "You must agree to the Terms and Privacy Policy." });
+      return;
+    }
     setLoading(true);
 
     try {
       const response = await fetch("/api/auth/signup", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password }),
       });
 
@@ -50,7 +54,6 @@ export default function SignUp() {
       if (!otpResponse.ok) throw new Error("Failed to send OTP!");
 
       toast("OTP Sent!", { description: "Check your email for the OTP." });
-
       setOtpModal(true);
     } catch (error: any) {
       toast("Sign up failed!", { description: error.message });
@@ -61,24 +64,18 @@ export default function SignUp() {
 
   const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const value = e.target.value;
-
     if (/[^0-9]/.test(value)) return;
-
-    setOtp((prevOtp) => {
-      const newOtp = [...prevOtp];
-      newOtp[index] = value;
-      return newOtp;
+    setOtp((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
     });
   };
 
   const handlePasteOtp = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData("Text");
-    
-    if (/^\d{6}$/.test(pastedData)) {
-      const newOtp = pastedData.split("");
-      setOtp(newOtp);
-    }
+    const pasted = e.clipboardData.getData("Text");
+    if (/^\d{6}$/.test(pasted)) setOtp(pasted.split(""));
   };
 
   const handleVerifyOTP = async () => {
@@ -86,14 +83,8 @@ export default function SignUp() {
     const otpCode = otp.join("");
     const email = localStorage.getItem("email");
 
-    if (!email) {
-      toast("Error!", { description: "Email not found. Please sign up again." });
-      setOtpLoading(false);
-      return;
-    }
-
-    if (otpCode.length !== 6 || otpCode.includes(" ")) {
-      toast("Please enter the full OTP", { description: "Make sure to enter a 6-digit OTP." });
+    if (!email || otpCode.length !== 6) {
+      toast("Invalid OTP", { description: "Please enter a valid OTP." });
       setOtpLoading(false);
       return;
     }
@@ -108,7 +99,7 @@ export default function SignUp() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Invalid OTP!");
 
-      toast("Account Verified!", { description: "Your account has been verified successfully." });
+      toast("Account Verified!", { description: "Your account has been verified." });
       localStorage.removeItem("email");
       router.push("/sign-in");
     } catch (error: any) {
@@ -127,22 +118,8 @@ export default function SignUp() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignUp} className="flex flex-col gap-2">
-            <Input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Username"
-              type="text"
-              required
-              disabled={loading}
-            />
-            <Input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              type="email"
-              required
-              disabled={loading}
-            />
+            <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" required disabled={loading} />
+            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" type="email" required disabled={loading} />
 
             <div className="flex items-center border rounded-lg overflow-hidden">
               <Input
@@ -151,7 +128,6 @@ export default function SignUp() {
                 placeholder="Password"
                 type={showPassword ? "text" : "password"}
                 required
-                className="border"
                 disabled={loading}
               />
               <button type="button" className="px-3" onClick={() => setShowPassword(!showPassword)}>
@@ -159,17 +135,23 @@ export default function SignUp() {
               </button>
             </div>
 
-            <Button size="lg" type="submit" disabled={loading} className="mt-2">
+            <div className="flex items-start gap-2 text-sm mt-2">
+              <Checkbox checked={agree} onCheckedChange={(v) => setAgree(!!v)} />
+              <p className="text-muted-foreground">
+                I agree to the{" "}
+                <a href="/terms" className="underline">Terms of Service</a>{" "}
+                and{" "}
+                <a href="/privacy" className="underline">Privacy Policy</a>.
+              </p>
+            </div>
+
+            <Button size="lg" type="submit" disabled={loading || !agree} className="mt-2">
               {loading ? "Loading..." : "Register"}
             </Button>
 
             <p className="text-center text-sm mt-2">
               Already have an account?{" "}
-              <button
-                type="button"
-                className="underline"
-                onClick={() => router.push("/sign-in")}
-              >
+              <button type="button" className="underline" onClick={() => router.push("/sign-in")}>
                 Sign In
               </button>
             </p>
@@ -180,23 +162,21 @@ export default function SignUp() {
       <Dialog open={otpModal} onOpenChange={setOtpModal}>
         <DialogContent className="flex flex-col items-center">
           <DialogHeader>
-            <DialogTitle className="text-center">Enter OTP</DialogTitle>
+            <DialogTitle>Enter OTP</DialogTitle>
           </DialogHeader>
-          <div className="flex justify-center gap-2">
-            {otp.map((_, index) => (
+          <div className="flex gap-2">
+            {otp.map((_, i) => (
               <Input
-                key={index}
-                type="text"
+                key={i}
                 maxLength={1}
-                value={otp[index]}
-                onChange={(e) => handleOtpChange(e, index)}
+                value={otp[i]}
+                onChange={(e) => handleOtpChange(e, i)}
                 onPaste={handlePasteOtp}
-                className="w-12 h-12 text-center text-2xl border rounded-md"
+                className="w-12 h-12 text-center text-2xl"
                 inputMode="numeric"
               />
             ))}
           </div>
-
           <Button onClick={handleVerifyOTP} disabled={otpLoading} className="mt-2">
             {otpLoading ? "Verifying..." : "Verify OTP"}
           </Button>

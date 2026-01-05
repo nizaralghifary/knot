@@ -18,6 +18,8 @@ export async function proxy(request: NextRequest) {
         pathname.startsWith("/sign-out") ||
         pathname.startsWith("/verify") ||
         pathname.startsWith("/verify/otp") ||
+        pathname.startsWith("/terms") ||
+        pathname.startsWith("/privacy") ||
         pathname.startsWith("/api/auth") 
     ) {
         return NextResponse.next();

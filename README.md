@@ -41,7 +41,7 @@
 - Manage User Account
 - View Exam Result per User
 
-> If you want to try Admin Features login with `Admin` username and `DReN9ULnpRsJaJ2` password
+> If you want to try Admin Features login with `Test` username and `XEF6ZVVBUC4KdQs` password
 
 ### Installation
 
