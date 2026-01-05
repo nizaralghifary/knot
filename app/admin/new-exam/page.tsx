@@ -26,6 +26,11 @@ const initialQuestion: Question = {
   order: 1,
 };
 
+interface MatchingPair {
+  left: string;
+  right: string;
+}
+
 export default function NewExamPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -67,8 +72,8 @@ export default function NewExamPage() {
   const handleOptionChange = (questionId: string, optionIndex: number, value: string) => {
     setQuestions(
       questions.map((q) => {
-        if (q.id === questionId && q.options) {
-          const newOptions = [...q.options];
+        if (q.id === questionId && Array.isArray(q.options) && typeof q.options[0] === 'string') {
+          const newOptions = [...q.options as string[]];
           newOptions[optionIndex] = value;
           return { ...q, options: newOptions };
         }
@@ -81,15 +86,15 @@ export default function NewExamPage() {
     setQuestions(
       questions.map((q) => {
         if (q.id === questionId) {
-          const newPairs = q.matching_pairs || [];
-          const updatedPairs = [...newPairs, { left: "", right: "" }];
+          const newPairs: MatchingPair[] = Array.isArray(q.matching_pairs) ? q.matching_pairs : [];
+          const updatedPairs: MatchingPair[] = [...newPairs, { left: "", right: "" }];
           
           return {
             ...q,
             matching_pairs: updatedPairs,
             options: updatedPairs,
             correct_answer: updatedPairs,
-          };
+          } as Question;
         }
         return q;
       })
@@ -99,15 +104,15 @@ export default function NewExamPage() {
   const handleRemoveMatchingPair = (questionId: string, pairIndex: number) => {
     setQuestions(
       questions.map((q) => {
-        if (q.id === questionId && q.matching_pairs) {
-          const newPairs = q.matching_pairs.filter((_, idx) => idx !== pairIndex);
+        if (q.id === questionId && Array.isArray(q.matching_pairs)) {
+          const newPairs: MatchingPair[] = q.matching_pairs.filter((_, idx) => idx !== pairIndex);
           
           return {
             ...q,
             matching_pairs: newPairs,
             options: newPairs,
             correct_answer: newPairs,
-          };
+          } as Question;
         }
         return q;
       })
@@ -122,7 +127,7 @@ export default function NewExamPage() {
   ) => {
     setQuestions(
       questions.map((q) => {
-        if (q.id === questionId && q.matching_pairs) {
+        if (q.id === questionId && Array.isArray(q.matching_pairs)) {
           const newPairs = [...q.matching_pairs];
           newPairs[pairIndex] = { ...newPairs[pairIndex], [field]: value };
 
@@ -131,7 +136,7 @@ export default function NewExamPage() {
             matching_pairs: newPairs,
             options: newPairs,
             correct_answer: newPairs,
-          };
+          } as Question;
         }
         return q;
       })
@@ -177,14 +182,14 @@ export default function NewExamPage() {
               matching_pairs: undefined,
             };
           } else if (type === "matching") {
-            const initialPairs = [{ left: "", right: "" }];
+            const initialPairs: MatchingPair[] = [{ left: "", right: "" }];
             return {
               ...q,
               question_type: type,
               options: initialPairs,
               matching_pairs: initialPairs,
               correct_answer: initialPairs,
-            };
+            } as Question;
           }
         }
         return q;
@@ -236,7 +241,7 @@ export default function NewExamPage() {
       }
 
       if (q.question_type === "multiple_choice") {
-        if (!q.options || q.options.some((opt) => !opt.trim())) {
+        if (!q.options || !Array.isArray(q.options) || q.options.some((opt) => !String(opt).trim())) {
           throw new Error(`Question ${q.order}: All options must be filled`);
         }
         if (!q.correct_answer) {
@@ -252,10 +257,11 @@ export default function NewExamPage() {
           );
         }
       } else if (q.question_type === "matching") {
-        if (!q.matching_pairs || q.matching_pairs.length === 0) {
+        const pairs = Array.isArray(q.matching_pairs) ? q.matching_pairs : [];
+        if (pairs.length === 0) {
           throw new Error(`Question ${q.order}: At least one matching pair is required`);
         }
-        if (q.matching_pairs.some((pair) => !pair.left.trim() || !pair.right.trim())) {
+        if (pairs.some((pair) => !pair.left.trim() || !pair.right.trim())) {
           throw new Error(
             `Question ${q.order}: All matching pairs must have both left and right values`
           );
@@ -276,7 +282,7 @@ export default function NewExamPage() {
       if (q.question_type === "multiple_choice") {
         return {
           ...baseQuestion,
-          options: q.options,
+          options: Array.isArray(q.options) ? q.options : [],
           correct_answer: q.correct_answer,
         };
       } else if (q.question_type === "short_answer") {
@@ -285,10 +291,11 @@ export default function NewExamPage() {
           correct_answer: q.correct_answer,
         };
       } else if (q.question_type === "matching") {
+        const matchingPairs = Array.isArray(q.matching_pairs) ? q.matching_pairs : [];
         return {
           ...baseQuestion,
-          options: q.matching_pairs,
-          correct_answer: q.matching_pairs,
+          options: matchingPairs,
+          correct_answer: matchingPairs,
         };
       }
       return baseQuestion;
