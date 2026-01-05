@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
 
 export default function SignIn() {
   const [username, setUsername] = useState("");
@@ -106,12 +107,8 @@ export default function SignIn() {
           </a>
         </p>
         <p className="mt-4 text-sm text-muted-foreground text-center">
-          Don&apos;t wanna use real data? Use the test account below:
+          Don&apos;t wanna use real data? <Link href="https://github.com/nizaralghifary/knot/tree/test?tab=readme-ov-file#admin" className="underline text-blue-400">See Docs</Link>
         </p>
-        <ul className="list-disc pl-5 mt-2 text-sm text-muted-foreground">
-          <li>Username: Test</li>
-          <li>Password: XEF6ZVVBUC4KdQs</li>
-        </ul>
       </CardContent>
     </Card>
   );
