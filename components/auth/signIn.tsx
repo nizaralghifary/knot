@@ -105,6 +105,13 @@ export default function SignIn() {
             Sign Up
           </a>
         </p>
+        <p className="mt-4 text-sm text-muted-foreground text-center">
+          Don&apos;t wanna use real data? Use the test account below:
+        </p>
+        <ul className="list-disc pl-5 mt-2 text-sm text-muted-foreground">
+          <li>Username: Test</li>
+          <li>Password: XEF6ZVVBUC4KdQs</li>
+        </ul>
       </CardContent>
     </Card>
   );
