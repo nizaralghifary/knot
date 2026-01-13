@@ -49,10 +49,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const passwordRegex = /^(?=.*[a-zA-Z])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordRegex.test(password)) {
+    if (password.length < 8) {
       return NextResponse.json(
-        { message: "Password must be at least 8 characters long and include at least one letter!" },
+        { message: "Password must be at least 8 characters long!" },
+        { status: 400 }
+      );
+    }
+
+    if (!/[a-zA-Z]/.test(password)) {
+      return NextResponse.json(
+        { message: "Password must include at least one letter!" },
+        { status: 400 }
+      );
+    }
+    
+    if (/\s/.test(password)) {
+      return NextResponse.json(
+        { message: "Password cannot contain spaces!" },
         { status: 400 }
       );
     }
@@ -84,14 +97,27 @@ export async function POST(request: NextRequest) {
     const salt = bcrypt.genSaltSync(10);
     const hashedPassword = bcrypt.hashSync(password, salt);
 
+    const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+    
     await db.insert(users).values({
       username,
       email,
       password: hashedPassword,
+      is_verified: isDemoMode,
+      role: "user",
+      created_at: new Date(),
     });
 
+    const successMessage = isDemoMode 
+      ? "Account successfully created (Demo Mode - Auto Verified)" 
+      : "Account successfully created. Please verify your email";
+
     return NextResponse.json(
-      { message: "Account successfully created" },
+      { 
+        message: successMessage,
+        demo_mode: isDemoMode,
+        is_verified: isDemoMode
+      },
       { status: 201 }
     );
   } catch (e) {

@@ -6,9 +6,10 @@ import { eq } from "drizzle-orm";
 
 const generateOTP = () => crypto.randomInt(100000, 999999).toString();
 const resend = new Resend(process.env.AUTH_RESEND_KEY);
+const COOLDOWN_SECONDS = 120;
 
 const hashOtp = (otp: string) =>
-crypto.createHash("sha256").update(otp).digest("hex");
+  crypto.createHash("sha256").update(otp).digest("hex");
 
 const sendOTPEmail = async (email: string, otp: string) => {
   const subject = "Your Knot OTP Code";
@@ -29,36 +30,45 @@ export async function POST(req: Request) {
     return new Response(JSON.stringify({ error: "Missing Email!" }), { status: 400 });
   }
 
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
   const [existingOtp] = await db
     .select()
     .from(otpCodes)
     .where(eq(otpCodes.email, email))
     .limit(1);
 
-  if (existingOtp && new Date(existingOtp.expires_at) > new Date()) {
-    return new Response(JSON.stringify({ error: "OTP already sent, please wait..." }), {
-      status: 429,
-    });
+  if (existingOtp) {
+    const createdAt = new Date(existingOtp.created_at || existingOtp.expires_at);
+    const now = new Date();
+    const secondsSinceLastOtp = Math.floor((now.getTime() - createdAt.getTime()) / 1000);
+    
+    if (secondsSinceLastOtp < COOLDOWN_SECONDS) {
+      const remainingSeconds = COOLDOWN_SECONDS - secondsSinceLastOtp;
+      return new Response(JSON.stringify({ 
+        error: `Please wait ${remainingSeconds} seconds before requesting a new OTP` 
+      }), { status: 429 });
+    }
+    
+    await db.delete(otpCodes).where(eq(otpCodes.email, email));
   }
 
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
   const otp = generateOTP();
   const hashedOtp = hashOtp(otp);
 
   try {
-    await db.delete(otpCodes).where(eq(otpCodes.email, email));
+    await db.insert(otpCodes).values({ 
+      email, 
+      code: hashedOtp, 
+      expires_at: expiresAt,
+      created_at: new Date()
+    });
 
-    await Promise.all([
-      db.insert(otpCodes).values({ 
-        email, 
-        code: hashedOtp, 
-        expires_at: expiresAt
-      }),
-      sendOTPEmail(email, otp),
-    ]);
+    await sendOTPEmail(email, otp);
 
-    return new Response(JSON.stringify({ message: "Your OTP has been sent" }), { status: 200 });
+    return new Response(JSON.stringify({ 
+      message: "Your OTP has been sent"
+    }), { status: 200 });
+    
   } catch (error) {
     console.error("Error sending OTP:", error);
     return new Response(JSON.stringify({ error: "Failed to send OTP!" }), { status: 500 });

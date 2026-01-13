@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
-import Link from "next/link";
+import { Spinner } from "@/components/spinner";
 
 export default function SignIn() {
   const [username, setUsername] = useState("");
@@ -88,6 +88,7 @@ export default function SignIn() {
               type="button"
               className="px-3"
               onClick={() => setShowPassword(!showPassword)}
+              disabled={loading}
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
@@ -96,7 +97,14 @@ export default function SignIn() {
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
           <Button size="lg" type="submit" disabled={loading}>
-            {loading ? "Loading..." : "Login"}
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <Spinner size="sm" />
+                Loading...
+              </div>
+            ) : (
+              "Login"
+            )}
           </Button>
         </form>
         <Separator className="my-4" />
@@ -105,9 +113,6 @@ export default function SignIn() {
           <a href="/sign-up" className="text-black dark:text-white underline">
             Sign Up
           </a>
-        </p>
-        <p className="mt-4 text-sm text-muted-foreground text-center">
-          Don&apos;t wanna use real data? <Link href="https://github.com/nizaralghifary/knot/tree/test?tab=readme-ov-file#admin" className="underline text-blue-400">See Docs</Link>
         </p>
       </CardContent>
     </Card>

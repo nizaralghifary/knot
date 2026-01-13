@@ -85,7 +85,7 @@ export default function SettingsPage() {
                         Logout
                     </Button>
                 </section>
-                {isAdmin && (
+                {isAdmin ? (
                     <section className="space-y-2">
                         <Item variant="outline" size="sm" asChild>
                             <Link href="/admin" className="block">
@@ -101,6 +101,27 @@ export default function SettingsPage() {
                                 </ItemActions>
                             </Link>
                         </Item>
+                    </section>
+                ) : (
+                    <section className="space-y-2 rounded-lg border p-6">
+                        <p className="text-lg font-medium mb-2">Admin Access</p>
+                        <p className="text-sm text-muted-foreground mb-3">
+                            Wanna be an Admin? Use this account
+                        </p>
+                        <Button 
+                            variant="outline" 
+                            className="w-full"
+                            asChild
+                        >
+                            <a 
+                                href="https://github.com/nizaralghifary/knot?tab=readme-ov-file#admin" 
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <Shield className="h-4 w-4 mr-2" />
+                                View Admin Account Details
+                            </a>
+                        </Button>
                     </section>
                 )}
                 <section className="space-y-2 rounded-lg border p-6">
