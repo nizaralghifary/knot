@@ -490,7 +490,7 @@ export default function TestPage() {
                         <br />
                         2. Then click the corresponding match on the right
                         <br />
-                        3. A green line will connect your matched pair
+                        3. A green arrow will point to your choice
                         <br />
                         4. Click the X button to remove a match if needed
                       </p>

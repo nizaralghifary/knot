@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import crypto from "crypto";
 
 const hashOtp = (otp: string) =>
-crypto.createHash("sha256").update(otp).digest("hex");
+  crypto.createHash("sha256").update(otp).digest("hex");
 
 export async function POST(req: Request) {
   const { email, otp } = await req.json();
@@ -35,8 +35,8 @@ export async function POST(req: Request) {
   }
 
   if (storedOtp.attempts >= 5) {
-      await db.delete(otpCodes).where(eq(otpCodes.email, email));
-      return Response.json({ error: "Too many attempts!" }, { status: 429 });
+    await db.delete(otpCodes).where(eq(otpCodes.email, email));
+    return Response.json({ error: "Too many attempts!" }, { status: 429 });
   }
 
   const incomingHash = hashOtp(otp);
